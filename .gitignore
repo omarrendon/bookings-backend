@@ -1,0 +1,69 @@
+# Node.js dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+out/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
+
+# Coverage output
+coverage/
+
+# Optional npm cache
+.npm/
+
+# Lint cache
+.eslintcache
+
+# Test coverage
+.nyc_output/
+
+# PM2 logs
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Optional build artifacts
+*.tgz
+
+# Firebase
+.firebase/
+
+# Sentry CLI
+.sentryclirc
+
+# Mac system files
+*.swp
+
+# Docker
+docker-compose.override.yml
+
+# Next.js
+.next/
+
+# Turborepo
+turbo/
