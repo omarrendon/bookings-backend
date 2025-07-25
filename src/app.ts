@@ -1,17 +1,21 @@
 import express from "express";
 import dotenv from "dotenv";
-// import { registerRoutes } from './interfaces/http/routes';
-// import { errorHandler } from './interfaces/http/middlewares/errorHandler';
+import authRoutes from "./routes/auth.routes";
 
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-// registerRoutes(app);
-// app.use(errorHandler);
 
-const PORT = process.env.PORT || 3000;
+// ROUTE FOR TEST
+app.get("/", (_req, res) => {
+  res.send("API WORKING ✅");
+});
+
+// ROUTES
+app.use("/api/auth", authRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

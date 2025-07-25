@@ -1,5 +1,5 @@
 import { QueryInterface } from "sequelize";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 
 export async function up(queryInterface: QueryInterface): Promise<void> {
   const hashedPassword = await bcrypt.hash("123456", 10);
