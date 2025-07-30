@@ -19,7 +19,7 @@ app.get("/", (_req, res) => {
 
 // ROUTES
 app.use("/api/auth", authRoutes);
-app.use("/api/bussiness", bussinessRoutes);
+app.use("/api/business", bussinessRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

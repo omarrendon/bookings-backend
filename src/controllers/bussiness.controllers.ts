@@ -5,6 +5,9 @@ import * as businessService from "../services/bussines.services";
 export const createBusiness = async (req: Request, res: Response) => {
   try {
     const { error, value } = createBussinessSchema.validate(req.body);
+
+    console.log("Validation result: ", error, value);
+
     if (error) return res.status(400).json({ error: error.message });
 
     const business = await businessService.createBusiness(value);

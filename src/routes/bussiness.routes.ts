@@ -8,8 +8,8 @@ import { authenticateToken } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/bussiness", authenticateToken, createBusiness);
-router.get("/bussiness", getAllBusinesses);
-router.get("/bussiness/:id", getBusinessById);
+router.post("/", authenticateToken, createBusiness);
+router.get("/business", getAllBusinesses);
+router.get("/business/:id", getBusinessById);
 
 export default router;

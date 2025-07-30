@@ -25,9 +25,19 @@ export const createBussinessSchema = Joi.object({
   city: Joi.string().min(2).max(50).required(),
   state: Joi.string().min(2).max(50).required(),
   zip_code: Joi.string().min(5).max(10).required(),
-  is_verified: Joi.boolean().default(false),
   country: Joi.string().min(2).max(50).optional().default("México"),
-  openingHours: Joi.array()
+  social_links: Joi.array()
+    .items(
+      Joi.object({
+        platform: Joi.string().required(),
+        url: Joi.string().uri().required(),
+      })
+    )
+    .optional(),
+  main_image_url: Joi.string().uri().optional(),
+  gallery_images: Joi.array().items(Joi.string().uri()).optional(),
+  is_verified: Joi.boolean().default(false),
+  hours_of_operation: Joi.array()
     .items(
       Joi.object({
         day: Joi.string()
@@ -50,17 +60,7 @@ export const createBussinessSchema = Joi.object({
       })
     )
     .required(),
-  social_linklinks: Joi.array()
-    .items(
-      Joi.object({
-        platform: Joi.string().required(),
-        url: Joi.string().uri().required(),
-      })
-    )
-    .optional(),
-  main_image_url: Joi.string().uri().optional(),
-  gallery_images: Joi.array().items(Joi.string().uri()).optional(),
-  isActive: Joi.boolean().default(true),
+  owner_id: Joi.number().integer().required(),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(() => new Date()),
 });
