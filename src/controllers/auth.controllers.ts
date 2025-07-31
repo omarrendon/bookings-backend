@@ -27,21 +27,19 @@ export async function login(req: Request, res: Response) {
 }
 
 export async function signup(req: Request, res: Response) {
-  const { error } = registerSchema.validate(req.body);
-  if (error) return res.status(400).json({ error: error.details[0].message });
-
   try {
-    const { name, email, password, role } = req.body;
-    const user = await registerUserWithEmailAndPassword(
-      name,
-      email,
-      password,
-      role
-    );
-    console.log("USER REGISTERED --- ", user);
-    return res.status(201).json({ message: "User created", user });
+    const { error, value } = registerSchema.validate(req.body);
+    if (error)
+      return res.status(400).json({ message: error.message, success: false });
+
+    const user = await registerUserWithEmailAndPassword(value);
+
+    return res.status(201).json({
+      message: "Usuario creado exitosamente.",
+      data: user,
+      success: true,
+    });
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    return res.status(400).json({ error: errorMessage });
+    return res.status(500).json({ message: `${err}.`, success: false });
   }
 }

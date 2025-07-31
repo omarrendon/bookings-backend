@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
-import { createBussinessSchema } from "../schemas/auth.schema";
+
 import * as businessService from "../services/bussines.services";
+import { createBussinessSchema } from "../schemas/business.schema";
 
 export const createBusiness = async (req: Request, res: Response) => {
   try {
     const { error, value } = createBussinessSchema.validate(req.body);
-    if (error) return res.status(400).json({ error: error.message });
+    if (error)
+      return res.status(400).json({ message: error.message, success: false });
 
     const business = await businessService.registerBusinessWithEmailAndPassword(
       value
@@ -16,7 +18,7 @@ export const createBusiness = async (req: Request, res: Response) => {
       success: true,
     });
   } catch (err) {
-    res.status(500).json({ message: `${err}.`, success: false });
+    return res.status(500).json({ message: `${err}.`, success: false });
   }
 };
 

@@ -1,7 +1,8 @@
+// Models
+import { User } from "../models/user.model";
+// Dependencies
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
-import { User } from "../models/user.model";
 
 function generateToken(userId: string, roleId: string): string {
   const secret = process.env.JWT_SECRET || "secret";
@@ -32,22 +33,27 @@ export async function loginUserWithEmailAndPassword(
   };
 }
 
-export async function registerUserWithEmailAndPassword(
-  name: string,
-  email: string,
-  password: string,
-  role: string = "user"
-) {
-  const existingUser = await User.findOne({ where: { email } });
-  console.log("EXISTING USER : ", existingUser);
-  if (existingUser) throw new Error("User already exists.");
+interface IregisterUser {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+}
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+export async function registerUserWithEmailAndPassword(
+  registerUser: IregisterUser
+) {
+  const existingUser = await User.findOne({
+    where: { email: registerUser.email },
+  });
+  if (existingUser) {
+    throw new Error("Usuario ya existente.");
+  }
+
+  const hashedPassword = await bcrypt.hash(registerUser.password, 10);
   const user = await User.create({
-    name,
-    email,
+    ...registerUser,
     password: hashedPassword,
-    role,
   });
 
   return user;
