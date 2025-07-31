@@ -8,7 +8,7 @@ import { authenticateToken } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/", authenticateToken, createBusiness);
+router.post("/", createBusiness);
 router.get("/business", getAllBusinesses);
 router.get("/business/:id", getBusinessById);
 

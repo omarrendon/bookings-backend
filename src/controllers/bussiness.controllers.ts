@@ -5,12 +5,13 @@ import * as businessService from "../services/bussines.services";
 export const createBusiness = async (req: Request, res: Response) => {
   try {
     const { error, value } = createBussinessSchema.validate(req.body);
-
-    console.log("Validation result: ", error, value);
-
+    console.log("INIT CREATE BUSINESS REQUEST --- ");
     if (error) return res.status(400).json({ error: error.message });
+    console.log("Validation error: ", error);
 
-    const business = await businessService.createBusiness(value);
+    const business = await businessService.registerBusinessWithEmailAndPassword(
+      value
+    );
     res.status(201).json(business);
   } catch (err) {
     res.status(500).json({ error: "Error creating business", details: err });

@@ -27,14 +27,11 @@ export async function login(req: Request, res: Response) {
 }
 
 export async function signup(req: Request, res: Response) {
-  console.log("INIT REQUEST ---");
   const { error } = registerSchema.validate(req.body);
-  console.log("Error : ", error);
   if (error) return res.status(400).json({ error: error.details[0].message });
 
   try {
     const { name, email, password, role } = req.body;
-    console.log("REGISTERING USER --- ", name, email, password, role);
     const user = await registerUserWithEmailAndPassword(
       name,
       email,

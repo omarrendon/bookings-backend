@@ -16,7 +16,6 @@ export const createBussinessSchema = Joi.object({
   name: Joi.string().min(2).required(),
   description: Joi.string().min(10),
   phone_number: Joi.string().min(10),
-  email: Joi.string().email().required(),
   website: Joi.string().uri().optional(),
   street: Joi.string().min(5).max(100).required(),
   external_number: Joi.string().min(1).max(10).required(),
@@ -60,7 +59,8 @@ export const createBussinessSchema = Joi.object({
       })
     )
     .required(),
-  owner_id: Joi.number().integer().required(),
+  raiting: Joi.number().min(0).max(5).optional(),
+  owner_id: Joi.string().required(),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(() => new Date()),
 });

@@ -25,16 +25,10 @@ export const Business = sequelize.define(
         len: [7, 20],
       },
     },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      validate: {
-        isEmail: true,
-      },
-    },
-    website: {
-      type: DataTypes.STRING,
-      allowNull: true,
+    raiting: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      defaultValue: 0,
     },
     street: {
       type: DataTypes.STRING(100),
@@ -74,6 +68,22 @@ export const Business = sequelize.define(
       allowNull: false,
       defaultValue: "México",
     },
+    owner_id: {
+      type: DataTypes.UUID,
+      allowNull: true, // Assuming this can be null if not set
+      references: {
+        model: "users", // Assuming you have a users table
+        key: "id",
+      },
+    },
+    main_image_url: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    gallery_images: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
     hours_of_operation: {
       type: DataTypes.JSONB,
       allowNull: true,
@@ -82,16 +92,8 @@ export const Business = sequelize.define(
       type: DataTypes.JSONB,
       allowNull: true,
     },
-    owner_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    main_image_url: {
+    website: {
       type: DataTypes.STRING,
-      allowNull: true,
-    },
-    gallery_images: {
-      type: DataTypes.JSONB,
       allowNull: true,
     },
   },
