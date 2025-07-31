@@ -51,6 +51,10 @@ export async function registerUserWithEmailAndPassword(
   }
 
   const hashedPassword = await bcrypt.hash(registerUser.password, 10);
+  if (!hashedPassword) {
+    throw new Error("Error al hashear la contraseña.");
+  }
+
   const user = await User.create({
     ...registerUser,
     password: hashedPassword,

@@ -33,10 +33,11 @@ export async function signup(req: Request, res: Response) {
       return res.status(400).json({ message: error.message, success: false });
 
     const user = await registerUserWithEmailAndPassword(value);
+    const { id, name, email, role } = user.get({ plain: true });
 
     return res.status(201).json({
-      message: "Usuario creado exitosamente.",
-      data: user,
+      message: "Usuario ha sido creado exitosamente.",
+      data: { id, name, email, role },
       success: true,
     });
   } catch (err) {
