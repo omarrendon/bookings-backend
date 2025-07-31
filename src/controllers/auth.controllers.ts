@@ -9,20 +9,36 @@ import { authSchema, registerSchema } from "../schemas/auth.schema";
 export async function login(req: Request, res: Response) {
   const { error } = authSchema.validate(req.body);
   if (error) {
-    console.log("Validation error: ", error.details[0].message);
     return res.status(400).json({
-      error: error.details[0].message,
+      messageq: error.message,
+      success: false,
     });
   }
   try {
     const { email, password } = req.body;
-    console.log("LOGIN REQUEST --- ", email, password);
-    const result = await loginUserWithEmailAndPassword(email, password);
-    console.log("REPSONSE AUTH --- ", result);
+    const { user, token } = await loginUserWithEmailAndPassword(
+      email,
+      password
+    );
 
-    return res.json(result);
+    return res.json({
+      message: "Usuario ha iniciado sesión exitosamente.",
+      data: {
+        token,
+        user: {
+          id: user.getDataValue("id"),
+          name: user.getDataValue("name"),
+          email: user.getDataValue("email"),
+          role: user.getDataValue("role"),
+        },
+      },
+      success: true,
+    });
   } catch (error) {
-    return res.status(401).json({ error: "Invalid email or password" });
+    return res.status(401).json({
+      message: "Credenciales inválidas.",
+      success: false,
+    });
   }
 }
 

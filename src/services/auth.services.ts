@@ -1,31 +1,27 @@
 // Models
 import { User } from "../models/user.model";
+
 // Dependencies
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
-function generateToken(userId: string, roleId: string): string {
-  const secret = process.env.JWT_SECRET || "secret";
-  return jwt.sign({ userId, roleId }, secret, { expiresIn: "1d" });
-}
+// Utils
+import { generateToken } from "../utils/jwt";
 
 export async function loginUserWithEmailAndPassword(
   email: string,
   password: string
 ) {
   const user = await User.findOne({ where: { email } });
-  if (!user) throw new Error("Invalid credentials.");
-  console.log("USER FOUND (): ", user);
+  if (!user) throw new Error("Usuario no encontrado.");
 
   const isValid = await bcrypt.compare(password, user.getDataValue("password"));
-  if (!isValid) throw new Error("Invalid credentials.");
-  console.log("PASSWORD VALIDATED");
+  if (!isValid) throw new Error("Credenciales inválidas.");
 
   const token = generateToken(
     user.getDataValue("id"),
+    user.getDataValue("email"),
     user.getDataValue("role")
   );
-  console.log("TOKEN GENERATED : ", token);
 
   return {
     token,
