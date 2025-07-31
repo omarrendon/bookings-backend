@@ -1,6 +1,3 @@
-// Dependencies
-import bcrypt from "bcrypt";
-
 // Models
 import { Business } from "../models/business.model";
 
@@ -11,26 +8,25 @@ export const registerBusinessWithEmailAndPassword = async (
   businessData: IBusinessBody
 ) => {
   try {
-    console.log("Registering business with data:", businessData);
-    // const existingBusiness = await Business.findOne({
-    //   where: { email: businessData.email },
-    // });
-    // if (existingBusiness) {
-    //   throw new Error("Business already exists.");
-    // }
-    // const hashedPassword = await bcrypt.hash(businessData.password, 10);
-    // businessData.password = hashedPassword;
+    const existingBusiness = await Business.findOne({
+      where: {
+        name: businessData.name,
+      },
+    });
+    if (existingBusiness) {
+      throw new Error("Negocio ya existente.");
+    }
 
     const business = await Business.create({
       ...businessData,
     });
-    console.log("Business registered successfully:", business);
+
     return business;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error("Error creating business: " + error.message);
+      throw new Error("Error al crear negocio : " + error.message);
     } else {
-      throw new Error("Error creating business: " + String(error));
+      throw new Error("Error al crear negocio : " + String(error));
     }
   }
 };
