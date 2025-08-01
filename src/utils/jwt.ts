@@ -15,6 +15,6 @@ export const verifyToken = (token: string) => {
   try {
     return jwt.verify(token, SECRT_KEY);
   } catch (error) {
-    return null;
+    throw new Error("Token inválido.");
   }
 };

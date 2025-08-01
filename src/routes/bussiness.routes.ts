@@ -4,7 +4,6 @@ import {
   getAllBusinesses,
   getBusinessById,
 } from "../controllers/bussiness.controllers";
-import { authenticateToken } from "../middlewares/auth.middleware";
 
 const router = Router();
 
