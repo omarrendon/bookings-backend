@@ -2,22 +2,21 @@
 import { Request, Response } from "express";
 
 // Services
-import { createCategoryInDB } from "../services/catogory.services";
+import { saveCategory } from "../services/catogory.services";
 
 // Schemas
 import { categorySchema } from "../schemas/category.schema";
 
 export async function createCategory(req: Request, res: Response) {
-  const { name, description } = req.body;
-
   try {
-    const { error } = categorySchema.validate(req.body);
+    const userId = req.user?.userId;
+    const { error, value } = categorySchema.validate(req.body);
     if (error) {
       return res
         .status(400)
         .json({ message: error.details[0].message, success: false });
     }
-    const category = await createCategoryInDB({ name, description });
+    const category = await saveCategory({ ...value }, userId);
     return res.status(201).json({
       message: "Categoría creada exitosamente.",
       data: category,

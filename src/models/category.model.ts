@@ -18,6 +18,15 @@ export const Category = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    business_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "businesses",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+    },
   },
   {
     tableName: "categories",
