@@ -25,3 +25,23 @@ export const saveProduct = async (
     throw new Error("Failed to save product");
   }
 };
+
+export const destroyProduct = async (
+  productId: string,
+  userId: string | undefined
+) => {
+  try {
+    console.log("Deleting product...");
+    const product = await Product.findOne({
+      where: { id: productId },
+    });
+    console.log("Product id:", product);
+    if (!product) {
+      throw new Error("Producto no encontrado o no autorizado.");
+    }
+    await product.destroy();
+    return { message: "Producto eliminado correctamente." };
+  } catch (error) {
+    throw new Error(`Error al eliminar producto: ${error}`);
+  }
+};
