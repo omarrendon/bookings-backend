@@ -45,6 +45,35 @@ export const deleteBusiness = async (req: Request, res: Response) => {
   }
 };
 
+export const updateBusiness = async (req: Request, res: Response) => {
+  try {
+    const businessId = req.params.id;
+    const businessData = req.body;
+
+    if (!businessId)
+      return res
+        .status(400)
+        .json({ message: "Id de negocio es requerido.", success: false });
+
+    const { error, value } = createBussinessSchema.validate(businessData);
+    if (error)
+      return res.status(400).json({ message: error.message, success: false });
+
+    const { updatedBusiness } = await businessService.updateBusiness(
+      businessId,
+      value
+    );
+
+    return res.status(200).json({
+      data: updatedBusiness,
+      message: "Negocio actualizado exitosamente.",
+      success: true,
+    });
+  } catch (err) {
+    return res.status(400).json({ message: `${err}.`, success: false });
+  }
+};
+
 // PENDING: Implement the rest of the business logic
 export const getAllBusinesses = async (_req: Request, res: Response) => {
   try {

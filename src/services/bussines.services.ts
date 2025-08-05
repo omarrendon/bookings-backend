@@ -58,6 +58,26 @@ export const destroyBusiness = async (
   }
 };
 
+export const updateBusiness = async (
+  businessId: string,
+  businessData: Partial<IBusinessBody>
+) => {
+  try {
+    const business = await Business.findOne({
+      where: { id: businessId },
+    });
+
+    if (!business) {
+      throw new Error("Negocio no encontrado o no autorizado.");
+    }
+
+    const updatedBusiness = await business.update(businessData);
+    return { updatedBusiness };
+  } catch (error) {
+    throw new Error(`Error al actualizar negocio: ${error}`);
+  }
+};
+
 export const getAllBusinesses = async () => {
   return await Business.findAll();
 };

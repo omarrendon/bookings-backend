@@ -4,6 +4,7 @@ import {
   deleteBusiness,
   getAllBusinesses,
   getBusinessById,
+  updateBusiness,
 } from "../controllers/bussiness.controllers";
 import {
   authenticateToken,
@@ -18,13 +19,20 @@ router.post(
   authorizeRoles("admin", "owner"),
   createBusiness
 );
-router.get("/", getAllBusinesses);
-router.get("/business/:id", getBusinessById);
 router.delete(
   "/:id",
   authenticateToken,
   authorizeRoles("admin"),
   deleteBusiness
 );
+router.put(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("admin", "owner"),
+  updateBusiness
+);
+// PENDING
+router.get("/", getAllBusinesses);
+router.get("/business/:id", getBusinessById);
 
 export default router;
