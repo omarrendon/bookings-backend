@@ -27,7 +27,7 @@ route.put(
   "/:id",
   authenticateToken,
   authorizeRoles("admin", "owner"),
-  updateProduct // Uncomment when updateProduct controller is implemented
+  updateProduct
 );
 
 export default route;

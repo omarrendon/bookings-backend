@@ -46,7 +46,7 @@ export const destroyProduct = async (
     const product = await Product.findOne({
       where: { id: productId },
     });
-    console.log("Product id:", product);
+
     if (!product) {
       throw new Error("Producto no encontrado o no autorizado.");
     }

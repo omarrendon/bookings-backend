@@ -46,7 +46,6 @@ export const createProduct = async (req: Request, res: Response) => {
   }
 };
 
-// todo: TRAER SOLO LOS PRODUCTOS DEL NEGOCIO QUE CONSULTA
 export const getProducts = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;

@@ -1,4 +1,5 @@
 export interface IBusinessBody {
+  id?: string; // Optional, for updates
   name: string;
   description?: string;
   phone_number?: string;
@@ -29,7 +30,7 @@ export interface IBusinessBody {
     url: string;
   }[];
   raiting?: number;
-  owner_id?: string; // Assuming this is the ID of the user who owns the business
+  owner_id: string; // Assuming this is the ID of the user who owns the business
   main_image_url?: string;
   gallery_images?: string[];
 }

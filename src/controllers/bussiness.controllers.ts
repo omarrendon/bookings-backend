@@ -5,20 +5,19 @@ import { createBussinessSchema } from "../schemas/business.schema";
 
 export const createBusiness = async (req: Request, res: Response) => {
   try {
+    const userId = req.user?.userId;
     const { error, value } = createBussinessSchema.validate(req.body);
     if (error)
       return res.status(400).json({ message: error.message, success: false });
 
-    const business = await businessService.registerBusinessWithEmailAndPassword(
-      value
-    );
+    const business = await businessService.registerBusiness(value, userId);
     res.status(201).json({
       data: business,
       message: "Negocio creado exitosamente.",
       success: true,
     });
   } catch (err) {
-    return res.status(500).json({ message: `${err}.`, success: false });
+    return res.status(400).json({ message: `${err}.`, success: false });
   }
 };
 

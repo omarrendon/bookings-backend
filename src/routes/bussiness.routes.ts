@@ -4,10 +4,19 @@ import {
   getAllBusinesses,
   getBusinessById,
 } from "../controllers/bussiness.controllers";
+import {
+  authenticateToken,
+  authorizeRoles,
+} from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/", createBusiness);
+router.post(
+  "/",
+  authenticateToken,
+  authorizeRoles("admin", "owner"),
+  createBusiness
+);
 router.get("/business", getAllBusinesses);
 router.get("/business/:id", getBusinessById);
 
