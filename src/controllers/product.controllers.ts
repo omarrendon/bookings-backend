@@ -7,6 +7,7 @@ import productSchema from "../schemas/product.schema";
 //Services
 import {
   destroyProduct,
+  getAllProducts,
   saveProduct,
   updateExistentProduct,
 } from "../services/product.services";
@@ -48,7 +49,8 @@ export const createProduct = async (req: Request, res: Response) => {
 // todo: TRAER SOLO LOS PRODUCTOS DEL NEGOCIO QUE CONSULTA
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const products = await Product.findAll();
+    const userId = req.user?.userId;
+    const products = await getAllProducts(userId);
     res.status(200).json({
       message: "Productos obtenidos correctamente",
       success: true,

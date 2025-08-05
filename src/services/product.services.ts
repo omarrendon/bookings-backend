@@ -4,6 +4,18 @@ import { Business } from "../models/business.model";
 //Interfaces
 import { IProduct } from "../interfaces/product.interfaces";
 
+export const getAllProducts = async (userId: string | undefined) => {
+  try {
+    const products = await Product.findAll({
+      where: { userId },
+    });
+    return products;
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    throw new Error("Failed to fetch products");
+  }
+};
+
 export const saveProduct = async (
   product: IProduct,
   userId: string | undefined
