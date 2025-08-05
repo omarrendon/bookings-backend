@@ -39,6 +39,25 @@ export const registerBusiness = async (
   }
 };
 
+export const destroyBusiness = async (
+  businessId: string,
+  userId: string | undefined
+) => {
+  try {
+    const business = await Business.findOne({
+      where: { id: businessId },
+    });
+
+    if (!business) {
+      throw new Error("Negocio no encontrado o no autorizado.");
+    }
+    await business.destroy();
+    return { message: "Negocio eliminado correctamente." };
+  } catch (error) {
+    throw new Error(`Error al eliminar negocio: ${error}`);
+  }
+};
+
 export const getAllBusinesses = async () => {
   return await Business.findAll();
 };

@@ -29,7 +29,7 @@ export function authorizeRoles(...roles: string[]) {
 
     if (!user || !roles.includes(user.role)) {
       return res.status(403).json({
-        message: "Forbidden: Insufficient permissions",
+        message: "Forbidden: Permission denied",
         success: false,
       });
     }

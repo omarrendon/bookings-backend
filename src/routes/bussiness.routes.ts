@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createBusiness,
+  deleteBusiness,
   getAllBusinesses,
   getBusinessById,
 } from "../controllers/bussiness.controllers";
@@ -17,7 +18,13 @@ router.post(
   authorizeRoles("admin", "owner"),
   createBusiness
 );
-router.get("/business", getAllBusinesses);
+router.get("/", getAllBusinesses);
 router.get("/business/:id", getBusinessById);
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("admin"),
+  deleteBusiness
+);
 
 export default router;

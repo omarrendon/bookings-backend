@@ -21,6 +21,30 @@ export const createBusiness = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteBusiness = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const businessId = req.params.id;
+
+    if (!businessId)
+      return res
+        .status(400)
+        .json({ message: "Id de negocio es requerido.", success: false });
+
+    const { message } = await businessService.destroyBusiness(
+      businessId,
+      userId
+    );
+
+    return res.status(204).json({
+      message,
+      success: true,
+    });
+  } catch (err) {
+    return res.status(400).json({ message: `${err}.`, success: false });
+  }
+};
+
 // PENDING: Implement the rest of the business logic
 export const getAllBusinesses = async (_req: Request, res: Response) => {
   try {
