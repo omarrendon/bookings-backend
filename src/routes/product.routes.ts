@@ -10,6 +10,7 @@ import {
   createProduct,
   deleteProduct,
   getProducts,
+  updateProduct,
 } from "../controllers/product.controllers";
 
 const route = Router();
@@ -21,6 +22,12 @@ route.delete(
   authenticateToken,
   deleteProduct,
   authorizeRoles("admin", "owner")
+);
+route.put(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("admin", "owner"),
+  updateProduct // Uncomment when updateProduct controller is implemented
 );
 
 export default route;

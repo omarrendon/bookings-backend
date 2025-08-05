@@ -5,7 +5,11 @@ import { Product } from "../models/product.model";
 //Schemas
 import productSchema from "../schemas/product.schema";
 //Services
-import { destroyProduct, saveProduct } from "../services/product.services";
+import {
+  destroyProduct,
+  saveProduct,
+  updateExistentProduct,
+} from "../services/product.services";
 
 // Extend Express Request interface to include 'user'
 declare global {
@@ -90,11 +94,14 @@ export const deleteProduct = async (req: Request, res: Response) => {
   }
 };
 
-// Update product controller
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const productId = req.params.id;
     const userId = req.user?.userId;
+
+    if (!productId || !userId) {
+      throw new Error("ID de producto o usuario no proporcionado.");
+    }
 
     const { error, value } = productSchema.validate(req.body);
     if (error) {
@@ -103,18 +110,13 @@ export const updateProduct = async (req: Request, res: Response) => {
         success: false,
       });
     }
-
-    const product = await Product.findOne({ where: { id: productId, userId } });
-    if (!product) {
-      return res.status(404).json({
-        message: "Producto no encontrado",
-        success: false,
-      });
-    }
-
-    await product.update(value);
+    const { message, product } = await updateExistentProduct(
+      productId,
+      userId,
+      value
+    );
     res.status(200).json({
-      message: "Producto actualizado correctamente",
+      message,
       success: true,
       data: product,
     });
