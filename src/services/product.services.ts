@@ -1,5 +1,5 @@
 //Models
-import { Product } from "../models/product.model";
+import Product from "../models/product.model";
 import { Business } from "../models/business.model";
 //Interfaces
 import { IProduct } from "../interfaces/product.interfaces";

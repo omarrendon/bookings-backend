@@ -1,7 +1,11 @@
+// Dependencies
 import { DataTypes } from "sequelize";
+// Database
 import { sequelize } from "../database/sequelize";
+// Models
+import Reservation from "./reservation.model";
 
-export const Product = sequelize.define(
+const Product = sequelize.define(
   "Product",
   {
     id: {
@@ -73,3 +77,5 @@ export const Product = sequelize.define(
     updatedAt: "updated_at",
   }
 );
+
+export default Product;
