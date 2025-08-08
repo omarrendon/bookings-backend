@@ -35,10 +35,20 @@ const ReservationProduct = sequelize.define(
       allowNull: false,
       defaultValue: 1,
     },
+    created_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
   },
   {
     tableName: "reservation_products",
     timestamps: true,
+    createdAt: "created_at",
+    updatedAt: "updated_at",
   }
 );
 
