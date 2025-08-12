@@ -1,7 +1,5 @@
 // Dependencies
 import { Request, Response } from "express";
-//Models
-import { Product } from "../models/product.model";
 //Schemas
 import productSchema from "../schemas/product.schema";
 //Services
@@ -16,7 +14,7 @@ import {
 declare global {
   namespace Express {
     interface Request {
-      user?: { userId: string };
+      user?: { userId: string; role?: string };
     }
   }
 }

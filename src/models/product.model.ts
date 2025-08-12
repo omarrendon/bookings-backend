@@ -2,8 +2,6 @@
 import { DataTypes } from "sequelize";
 // Database
 import { sequelize } from "../database/sequelize";
-// Models
-import Reservation from "./reservation.model";
 
 const Product = sequelize.define(
   "Product",

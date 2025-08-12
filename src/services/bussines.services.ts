@@ -82,6 +82,18 @@ export const getAllBusinesses = async () => {
   return await Business.findAll();
 };
 
-export const getBusinessById = async (id: string) => {
-  return await Business.findByPk(id);
+export const getBusinessByUserId = async (userId: string | undefined) => {
+  try {
+    if (!userId) {
+      throw new Error(
+        "El ID de usuario es requerido para obtener la información del negocio."
+      );
+    }
+    console.log("Fetching business for user ID: ", userId);
+    const business = await Business.findOne({ where: { owner_id: userId } });
+    console.log("Business found: ", business);
+    return business;
+  } catch (error) {
+    throw new Error(`Error al obtener negocio: ${error}`);
+  }
 };

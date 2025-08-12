@@ -4,15 +4,19 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware";
-import { registerReservation } from "../controllers/reservation.controllers";
+import {
+  registerReservation,
+  getAllReservations,
+} from "../controllers/reservation.controllers";
 
 const router = express.Router();
 
-router.post(
+router.post("/", registerReservation);
+router.get(
   "/",
-  // authenticateToken,
-  // authorizeRoles("admin", "user", "owner"),
-  registerReservation
+  authenticateToken,
+  authorizeRoles("admin", "owner"),
+  getAllReservations
 );
 
 export default router;

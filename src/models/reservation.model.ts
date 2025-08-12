@@ -1,9 +1,9 @@
 // Dependencies
 import { DataTypes } from "sequelize";
 // Database
-import { sequelize } from "../database/sequelize";
-// Models
-import Product from "./product.model";
+// import { sequelize } from "../database/sequelize";
+const db = require("../database/sequelize");
+const { sequelize } = db;
 
 const Reservation = sequelize.define(
   "Reservation",

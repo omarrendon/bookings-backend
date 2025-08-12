@@ -44,36 +44,6 @@ Object.keys(db).forEach(modelName => {
   }
 });
 
-// Asociaciones: aquí van tus belongsTo, hasMany, belongsToMany
-const { User, Role, Business, Reservation, Product, ReservationProduct } =
-  sequelize.models;
-
-// // Relaciones Usuario ↔ Roles
-// Role.hasMany(User, { foreignKey: 'role_id' });
-// User.belongsTo(Role, { foreignKey: 'role_id' });
-
-// Relaciones Negocio ↔ Usuario
-Business.belongsTo(User, { foreignKey: "owner_id" });
-User.hasMany(Business, { foreignKey: "owner_id" });
-
-// Relaciones Negocio ↔ Reservas
-Business.hasMany(Reservation, { foreignKey: "business_id" });
-Reservation.belongsTo(Business, { foreignKey: "business_id" });
-
-// Relación M:N Reservas ↔ Productos (tabla intermedia)
-Reservation.belongsToMany(Product, {
-  through: ReservationProduct,
-  foreignKey: "reservation_id",
-  otherKey: "product_id",
-  as,
-});
-Product.belongsToMany(Reservation, {
-  through: ReservationProduct,
-  foreignKey: "product_id",
-  otherKey: "reservation_id",
-  as: "reservations",
-});
-
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
