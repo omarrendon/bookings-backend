@@ -87,7 +87,7 @@ export const getAllBusinesses = async (_req: Request, res: Response) => {
 // PENDING: Implement the rest of the business logic
 export const getBusinessById = async (req: Request, res: Response) => {
   try {
-    const business = await businessService.getBusinessById(req.params.id);
+    const business = await businessService.getBusinessByUserId(req.params.id);
     if (!business) return res.status(404).json({ error: "Business not found" });
     res.json(business);
   } catch (err) {

@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/sequelize";
 
-export const Business = sequelize.define(
+const Business = sequelize.define(
   "Business",
   {
     id: {
@@ -104,3 +104,5 @@ export const Business = sequelize.define(
     updatedAt: "updated_at",
   }
 );
+
+export default Business;

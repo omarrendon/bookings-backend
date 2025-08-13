@@ -1,9 +1,8 @@
 // Models
-import { Business } from "../models/business.model";
 import Product from "../models/product.model";
 import Reservation from "../models/reservation.model";
 import ReservationProduct from "../models/reservationProduct.model";
-
+import { User } from "../models/user.model";
 // Services
 import { getBusinessByUserId } from "./bussines.services";
 
@@ -24,17 +23,10 @@ export const createReservation = async (
 ) => {
   try {
     const { business_id, products, ...data } = reservationData;
-    console.log("Creating reservation with data:", {
-      ...data,
-      business_id,
-      user_id: userId,
-    });
-
     const reservation = await Reservation.create({
       ...data,
       business_id,
     });
-    console.log("Reservation created: ", reservation);
 
     const productEntries: {
       reservation_id: string | number | undefined;
@@ -47,7 +39,6 @@ export const createReservation = async (
     }));
 
     const response = await ReservationProduct.bulkCreate(productEntries);
-    console.log("Reservation products created: ", response);
 
     return { reservation, products: response };
   } catch (error) {
@@ -65,42 +56,32 @@ export const getAllReservations = async (
   business_id?: string | string[] | undefined
 ) => {
   try {
-    console.log("Init getAllReservations services ---", userId);
-    const where: any = {};
-    console.log("INIT WHERE : ", where);
+    let where: any = {};
+
     if (role === "owner") {
-      console.log("Filtering by owner: ", userId);
-      // const businessId = await getBusinessByUserId(userId);
-      // console.log("Business ID for owner: ", businessId);
-      // if (!businessId)
-      // throw new Error("No se encontró el negocio del propietario.");
-      // where.business_id = businessId?.get("id");
+      const businessId = await getBusinessByUserId(userId);
+      if (!businessId)
+        throw new Error("No se encontró el negocio del propietario.");
+      where.business_id = businessId?.getDataValue("id");
     }
     if (role === "admin" && business_id) {
-      console.log("Filtering by business_id for admin: ", business_id);
       where.business_id = business_id;
     }
 
-    console.log("Where clause for reservations: ", where);
-
     const reservations = await Reservation.findAll({
-      // where,
+      where,
       include: [
-        //   {
-        //     model: Business,
-        //     as: "products",
-        //     // through: { Product },
-        //     attributes: ["id", "name", "address"],
-        //   },
         {
-          model: ReservationProduct,
-          include: [{ model: Product, attributes: ["id", "name", "price"] }],
+          model: Product,
+          as: "products",
+          through: {
+            attributes: ["quantity"],
+          },
         },
       ],
       order: [["created_at", "DESC"]],
     });
 
-    console.log("Reservations found: ", reservations);
     return reservations;
   } catch (error) {
     if (error instanceof Error) {

@@ -1,3 +1,4 @@
+// DEPENDENCIES
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/sequelize";
 
@@ -51,5 +52,18 @@ const ReservationProduct = sequelize.define(
     updatedAt: "updated_at",
   }
 );
+
+// Product.belongsToMany(Reservation, {
+//   through: ReservationProduct,
+//   as: "reservation_products",
+//   foreignKey: "product_id",
+//   otherKey: "reservation_id",
+// });
+// Reservation.belongsToMany(Product, {
+//   through: ReservationProduct,
+//   as: "reservation_products",
+//   foreignKey: "reservation_id",
+//   otherKey: "product_id",
+// });
 
 export default ReservationProduct;

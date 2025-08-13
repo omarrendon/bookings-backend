@@ -7,7 +7,6 @@ import * as reservationService from "../services/reservation.services";
 
 export const registerReservation = async (req: Request, res: Response) => {
   try {
-    console.log("Registering reservation: ", req.body);
     const userId = req.user?.userId;
     const { error, value } = createReservationSchema.validate(req.body);
 
@@ -35,8 +34,6 @@ export const getAllReservations = async (req: Request, res: Response) => {
     const role = req.user?.role;
     const business_id = req.query.business_id as string | string[] | undefined;
 
-    // console.log("User : ", businessId);
-    console.log("Init getAllReservations with role: ", role);
     if (role !== "admin" && role !== "owner") {
       return res.status(403).json({
         message: "No tienes permisos para ver las reservaciones.",

@@ -1,5 +1,5 @@
 // Models
-import { Business } from "../models/business.model";
+import Business from "../models/business.model";
 
 // Interfaces
 import { IBusinessBody } from "../interfaces/businessInterface";
@@ -89,9 +89,7 @@ export const getBusinessByUserId = async (userId: string | undefined) => {
         "El ID de usuario es requerido para obtener la información del negocio."
       );
     }
-    console.log("Fetching business for user ID: ", userId);
     const business = await Business.findOne({ where: { owner_id: userId } });
-    console.log("Business found: ", business);
     return business;
   } catch (error) {
     throw new Error(`Error al obtener negocio: ${error}`);
