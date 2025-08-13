@@ -2,7 +2,6 @@
 import Product from "../models/product.model";
 import Reservation from "../models/reservation.model";
 import ReservationProduct from "../models/reservationProduct.model";
-import { User } from "../models/user.model";
 // Services
 import { getBusinessByUserId } from "./bussines.services";
 
@@ -88,6 +87,63 @@ export const getAllReservations = async (
       throw new Error(`Error al obtener reservas: ${error.message}`);
     } else {
       throw new Error("Error al obtener reservas: Error desconocido");
+    }
+  }
+};
+
+// REGLAS DE NEGOCIO
+/*
+- Una reservación puede ser creada por cualquier usuario.
+- Una reservación debe tener al menos un producto asociado.
+- Una reservación debe pertenecer a un negocio.
+- Una reservación puede ser actualizada por el propietario o un administrador.
+- Una reservación puede ser actualizada para cambiar su estado (pendiente, confirmada,
+  cancelada, completada).
+- Una reservación no puede ser actualizada si ya fue completada.
+- Solo el propietario de la reservación puede actualizar su estado.
+- Los administradores pueden actualizar cualquier reservación.
+
+*/
+enum ReservationStatus {
+  PENDING = "pending",
+  CONFIRMED = "confirmed",
+  CANCELED = "canceled",
+  COMPLETED = "completed",
+}
+
+export const updateStatus = async (
+  reservationId: string,
+  statusData: { status: ReservationStatus },
+  user?: any
+) => {
+  try {
+    const reservation = await Reservation.findByPk(reservationId);
+    if (!reservation) {
+      throw new Error("Reservación no existente.");
+    }
+
+    if (reservation.getDataValue("status") === ReservationStatus.COMPLETED) {
+      throw new Error("No se puede actualizar una reservación completada.");
+    }
+
+    const modifyStatus = {
+      status: statusData.status,
+      updated_by: JSON.stringify(user),
+      updated_at: new Date(),
+    };
+
+    const updatedReservation = await reservation.update(modifyStatus, {
+      where: {
+        id: reservationId,
+      },
+    });
+
+    return updatedReservation;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error al actualizar la reservación: ${error.message}`);
+    } else {
+      throw new Error("Error al actualizar la reservación: Error desconocido");
     }
   }
 };

@@ -79,6 +79,11 @@ const Reservation = sequelize.define(
       type: DataTypes.DATE,
       allowNull: false,
     },
+    updated_by: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      defaultValue: null,
+    },
   },
   {
     tableName: "reservations",
