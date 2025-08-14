@@ -15,19 +15,24 @@ import {
 
 const route = Router();
 
-route.post("/", authenticateToken, createProduct);
-route.get("/", getProducts);
-route.delete(
-  "/:id",
+route.post(
+  "/",
   authenticateToken,
-  deleteProduct,
-  authorizeRoles("admin", "owner")
+  authorizeRoles("admin", "owner"),
+  createProduct
 );
+route.get("/:id", getProducts);
 route.put(
   "/:id",
   authenticateToken,
   authorizeRoles("admin", "owner"),
   updateProduct
+);
+route.delete(
+  "/:id",
+  authenticateToken,
+  deleteProduct,
+  authorizeRoles("admin", "owner")
 );
 
 export default route;

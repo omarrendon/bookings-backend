@@ -46,8 +46,15 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    const products = await getAllProducts(userId);
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({
+        message: "ID de negocio no proporcionado.",
+        success: false,
+      });
+    }
+
+    const products = await getAllProducts(id);
     res.status(200).json({
       message: "Productos obtenidos correctamente",
       success: true,

@@ -1,20 +1,8 @@
 //Models
 import Product from "../models/product.model";
-import { Business } from "../models/business.model";
+import Business from "../models/business.model";
 //Interfaces
 import { IProduct } from "../interfaces/product.interfaces";
-
-export const getAllProducts = async (userId: string | undefined) => {
-  try {
-    const products = await Product.findAll({
-      where: { userId },
-    });
-    return products;
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    throw new Error("Failed to fetch products");
-  }
-};
 
 export const saveProduct = async (
   product: IProduct,
@@ -35,6 +23,17 @@ export const saveProduct = async (
   } catch (error) {
     console.error("Error saving product:", error);
     throw new Error("Failed to save product");
+  }
+};
+
+export const getAllProducts = async (id: string) => {
+  try {
+    const products = await Product.findAll({
+      where: { business_id: id },
+    });
+    return products;
+  } catch (error) {
+    throw new Error("Error al obtener productos");
   }
 };
 
