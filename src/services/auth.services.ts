@@ -60,7 +60,6 @@ export async function registerUserWithEmailAndPassword(
 }
 
 export const getRoleByuser = async (userId: string) => {
-  console.log("Fetching user role for ID:", userId);
   const user = await User.findByPk(userId);
   if (!user) throw new Error("Usuario no encontrado.");
 

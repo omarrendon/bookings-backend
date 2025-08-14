@@ -5,6 +5,18 @@ import ReservationProduct from "../models/reservationProduct.model";
 // Services
 import { getBusinessByUserId } from "./bussines.services";
 
+// REGLAS DE NEGOCIO
+/*
+- Una reservación puede ser creada por cualquier usuario.
+- Una reservación debe tener al menos un producto asociado.
+- Una reservación debe pertenecer a un negocio.
+- Una reservación puede ser actualizada por el propietario o un administrador.
+- Una reservación puede ser actualizada para cambiar su estado (pendiente, confirmada,
+  cancelada, completada).
+- Una reservación no puede ser actualizada si ya fue completada.
+- Solo el propietario de la reservación puede actualizar su estado.
+*/
+
 interface ReservationProductInput {
   product_id: string;
   quantity: number;
@@ -91,19 +103,6 @@ export const getAllReservations = async (
   }
 };
 
-// REGLAS DE NEGOCIO
-/*
-- Una reservación puede ser creada por cualquier usuario.
-- Una reservación debe tener al menos un producto asociado.
-- Una reservación debe pertenecer a un negocio.
-- Una reservación puede ser actualizada por el propietario o un administrador.
-- Una reservación puede ser actualizada para cambiar su estado (pendiente, confirmada,
-  cancelada, completada).
-- Una reservación no puede ser actualizada si ya fue completada.
-- Solo el propietario de la reservación puede actualizar su estado.
-- Los administradores pueden actualizar cualquier reservación.
-
-*/
 enum ReservationStatus {
   PENDING = "pending",
   CONFIRMED = "confirmed",

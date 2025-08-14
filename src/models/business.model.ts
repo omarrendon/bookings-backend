@@ -1,5 +1,8 @@
+// DEPENDENCIES
 import { DataTypes } from "sequelize";
 import { sequelize } from "../database/sequelize";
+// Models
+import { User } from "./user.model";
 
 const Business = sequelize.define(
   "Business",
@@ -104,5 +107,10 @@ const Business = sequelize.define(
     updatedAt: "updated_at",
   }
 );
+
+Business.belongsTo(User, {
+  foreignKey: "owner_id",
+  as: "owner",
+});
 
 export default Business;

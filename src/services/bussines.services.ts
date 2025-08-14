@@ -1,8 +1,9 @@
 // Models
 import Business from "../models/business.model";
-
+import { User } from "../models/user.model";
 // Interfaces
 import { IBusinessBody } from "../interfaces/businessInterface";
+// Services
 import { getRoleByuser } from "./auth.services";
 
 export const registerBusiness = async (
@@ -18,7 +19,6 @@ export const registerBusiness = async (
     const existingBusiness = await Business.findOne({
       where: {
         name: businessData.name,
-        // owner_id: userId, // Ensure the business is unique for the owner
       },
     });
 
@@ -79,7 +79,12 @@ export const updateBusiness = async (
 };
 
 export const getAllBusinesses = async () => {
-  return await Business.findAll();
+  const businesses = await Business.findAll({
+    include: [
+      { model: User, as: "owner", attributes: ["id", "name", "email"] },
+    ],
+  });
+  return { businesses };
 };
 
 export const getBusinessByUserId = async (userId: string | undefined) => {

@@ -32,7 +32,7 @@ router.put(
   updateBusiness
 );
 // PENDING
-router.get("/", getAllBusinesses);
+router.get("/", authenticateToken, authorizeRoles("admin"), getAllBusinesses);
 router.get("/business/:id", getBusinessById);
 
 export default router;

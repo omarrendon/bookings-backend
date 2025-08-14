@@ -74,13 +74,18 @@ export const updateBusiness = async (req: Request, res: Response) => {
   }
 };
 
-// PENDING: Implement the rest of the business logic
 export const getAllBusinesses = async (_req: Request, res: Response) => {
   try {
-    const businesses = await businessService.getAllBusinesses();
-    res.json(businesses);
+    const { businesses } = await businessService.getAllBusinesses();
+    return res.json({
+      data: businesses,
+      message: "Negocios obtenidos exitosamente.",
+      success: true,
+    });
   } catch (err) {
-    res.status(500).json({ error: "Error fetching businesses" });
+    res
+      .status(500)
+      .json({ message: "Error fetching businesses", success: false });
   }
 };
 
