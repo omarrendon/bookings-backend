@@ -94,8 +94,16 @@ export const getBusinessByUserId = async (userId: string | undefined) => {
         "El ID de usuario es requerido para obtener la información del negocio."
       );
     }
-    const business = await Business.findOne({ where: { owner_id: userId } });
-    return business;
+    const business = await Business.findOne({
+      where: { id: userId },
+      include: [
+        { model: User, as: "owner", attributes: ["id", "name", "email"] },
+      ],
+    });
+    if (!business) {
+      throw new Error("Negocio no encontrado para el usuario proporcionado.");
+    }
+    return { business };
   } catch (error) {
     throw new Error(`Error al obtener negocio: ${error}`);
   }

@@ -33,6 +33,6 @@ router.put(
 );
 // PENDING
 router.get("/", authenticateToken, authorizeRoles("admin"), getAllBusinesses);
-router.get("/business/:id", getBusinessById);
+router.get("/:id", authenticateToken, authorizeRoles("admin"), getBusinessById);
 
 export default router;
