@@ -18,21 +18,21 @@ const route = Router();
 route.post(
   "/",
   authenticateToken,
-  authorizeRoles("admin", "owner"),
+  authorizeRoles(["admin", "owner"]),
   createProduct
 );
 route.get("/:id", getProducts);
 route.put(
   "/:id",
   authenticateToken,
-  authorizeRoles("admin", "owner"),
+  authorizeRoles(["admin", "owner"]),
   updateProduct
 );
 route.delete(
   "/:id",
   authenticateToken,
   deleteProduct,
-  authorizeRoles("admin", "owner")
+  authorizeRoles(["admin", "owner"])
 );
 
 export default route;

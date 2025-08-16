@@ -59,18 +59,24 @@ export const updateBusiness = async (req: Request, res: Response) => {
     if (error)
       return res.status(400).json({ message: error.message, success: false });
 
-    const { updatedBusiness } = await businessService.updateBusiness(
+    const updateResult = await businessService.updateBusiness(
       businessId,
       value
     );
 
+    if (!updateResult) {
+      return res.status(404).json({
+        message: "Negocio no encontrado o no autorizadomiomioomik.",
+        success: false,
+      });
+    }
     return res.status(200).json({
-      data: updatedBusiness,
+      data: updateResult,
       message: "Negocio actualizado exitosamente.",
       success: true,
     });
   } catch (err) {
-    return res.status(400).json({ message: `${err}.`, success: false });
+    return res.status(500).json({ message: `${err}.`, success: false });
   }
 };
 

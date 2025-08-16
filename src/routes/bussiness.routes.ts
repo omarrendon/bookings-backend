@@ -10,29 +10,43 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware";
+import Business from "../models/business.model";
 
 const router = Router();
 
 router.post(
   "/",
   authenticateToken,
-  authorizeRoles("admin", "owner"),
+  authorizeRoles(["admin", "owner"], {
+    model: Business,
+    ownerField: "owner_id",
+    resourceIdParam: "id",
+  }),
   createBusiness
 );
 router.delete(
   "/:id",
   authenticateToken,
-  authorizeRoles("admin"),
+  authorizeRoles(["admin"]),
   deleteBusiness
 );
 router.put(
   "/:id",
   authenticateToken,
-  authorizeRoles("admin", "owner"),
+  authorizeRoles(["admin", "owner"], {
+    model: Business,
+    ownerField: "owner_id",
+    resourceIdParam: "id",
+  }),
   updateBusiness
 );
-// PENDING
-router.get("/", authenticateToken, authorizeRoles("admin"), getAllBusinesses);
-router.get("/:id", authenticateToken, authorizeRoles("admin"), getBusinessById);
+
+router.get("/", authenticateToken, authorizeRoles(["admin"]), getAllBusinesses);
+router.get(
+  "/:id",
+  authenticateToken,
+  authorizeRoles(["admin"]),
+  getBusinessById
+);
 
 export default router;
