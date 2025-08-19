@@ -17,11 +17,11 @@ const router = Router();
 router.post(
   "/",
   authenticateToken,
-  authorizeRoles(["admin", "owner"], {
-    model: Business,
-    ownerField: "owner_id",
-    resourceIdParam: "id",
-  }),
+  // authorizeRoles(["admin", "owner"], {
+  //   model: Business,
+  //   ownerField: "owner_id",
+  //   resourceIdParam: "id",
+  // }),
   createBusiness
 );
 router.delete(
@@ -45,7 +45,7 @@ router.get("/", authenticateToken, authorizeRoles(["admin"]), getAllBusinesses);
 router.get(
   "/:id",
   authenticateToken,
-  authorizeRoles(["admin"]),
+  // authorizeRoles(["admin"]),
   getBusinessById
 );
 

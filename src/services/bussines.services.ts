@@ -68,7 +68,7 @@ export const updateBusiness = async (
     });
 
     if (!business) {
-      throw new Error("Negocio no encontrado o no autorizado.2222");
+      throw new Error("Negocio no encontrado o no autorizado.");
     }
 
     const updatedBusiness = await business.update(businessData);
