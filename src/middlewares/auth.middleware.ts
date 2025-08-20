@@ -1,5 +1,5 @@
 // Dependencies
-import { Request, Response, NextFunction } from "express";
+import e, { Request, Response, NextFunction } from "express";
 import { Model, ModelStatic } from "sequelize";
 import jwt from "jsonwebtoken";
 
@@ -27,29 +27,29 @@ export function authenticateToken(
 
 interface OwnershipConfig {
   model: ModelStatic<Model>; // Modelo de Sequelize
-  ownerField: string; // Campo que identifica al dueño (ej: "owner_id")
+  ownerField?: string; // Campo que identifica al dueño (ej: "owner_id")
   resourceIdParam?: string; // Nombre del parámetro o campo donde viene el id (default: "id")
+  through?: {
+    relationField: string; // Campo en el recurso que apunta al modelo relacionado (ej: "business_id")
+    relatedModel: ModelStatic<Model>; // Modelo relacionado (ej: Business)
+    relatedOwnerField: string; // Campo en el modelo relacionado que apunta al owner (ej: "owner_id")
+  };
 }
 
 export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log("INICIO : Roles requeridos:", roles);
       const user = (req as any).user; // Obtenemos el usuario del request
-      console.log("Usuario autenticado:", user);
       if (!user || !roles.includes(user.role)) {
         return res.status(403).json({
           message: "No tienes permisos necesarios para este recurso.",
           success: false,
         });
       }
-      if (user.role === "admin") {
-        console.log("Usuario es admin, acceso permitido. ****");
-        return next();
-      }
+      if (user.role === "admin") return next();
       //  Si es owner, validar propiedad (solo si se pasó config)
       if (user.role === "owner" && config) {
-        const { model, ownerField, resourceIdParam = "id" } = config;
+        const { model, ownerField, resourceIdParam = "id", through } = config;
         // Buscar ID en params, body o query
         const resourceId =
           req.params[resourceIdParam] ||
@@ -73,12 +73,35 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
           });
         }
 
-        // Verificar propiedad
-        if (resource.getDataValue(ownerField) !== user.id) {
-          return res.status(403).json({
-            message: "No eres el propietario de este recurso.",
-            success: false,
-          });
+        if (ownerField) {
+          if (resource.getDataValue(ownerField) !== user.userId) {
+            return res.status(403).json({
+              message: "No eres el propietario de este recurso.",
+              success: false,
+            });
+          }
+        } else if (through) {
+          const relatedId = resource.getDataValue(through.relationField);
+          const relatedResource = await through.relatedModel.findByPk(
+            relatedId
+          );
+
+          if (!relatedResource) {
+            return res.status(404).json({
+              message: "Recurso relacionado no encontrado.",
+              success: false,
+            });
+          }
+
+          if (
+            relatedResource.getDataValue(through.relatedOwnerField) !==
+            user.userId
+          ) {
+            return res.status(403).json({
+              message: "No eres el propietario de este recurso.",
+              success: false,
+            });
+          }
         }
       }
       return next();
