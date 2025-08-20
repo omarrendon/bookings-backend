@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 import * as businessService from "../services/bussines.services";
 import { createBussinessSchema } from "../schemas/business.schema";
+import { getRoleByuser } from "../services/auth.services";
 
 export const createBusiness = async (req: Request, res: Response) => {
   try {
@@ -9,6 +10,15 @@ export const createBusiness = async (req: Request, res: Response) => {
     const { error, value } = createBussinessSchema.validate(req.body);
     if (error)
       return res.status(400).json({ message: error.message, success: false });
+
+    const userRole = await getRoleByuser(userId as string);
+
+    if (userRole !== "admin" && userRole !== "owner") {
+      return res.status(403).json({
+        message: "No tienes permisos para crear un negocio.",
+        success: false,
+      });
+    }
 
     const business = await businessService.registerBusiness(value, userId);
     res.status(201).json({

@@ -3,28 +3,24 @@ import Business from "../models/business.model";
 import { User } from "../models/user.model";
 // Interfaces
 import { IBusinessBody } from "../interfaces/businessInterface";
-// Services
-import { getRoleByuser } from "./auth.services";
 
 export const registerBusiness = async (
   businessData: IBusinessBody,
   userId: string | undefined
 ) => {
   try {
-    const userRole = await getRoleByuser(userId as string);
-    if (userRole !== "admin" && userRole !== "owner") {
-      throw new Error("No tienes permisos para crear un negocio");
-    }
-
     const existingBusiness = await Business.findOne({
       where: {
-        name: businessData.name,
+        owner_id: userId,
       },
     });
 
     if (existingBusiness) {
-      throw new Error("Negocio ya existente.");
+      throw new Error(
+        "Ya tienes un negocio registrado. Solo se permite uno por usuario."
+      );
     }
+
     const business = await Business.create({
       ...businessData,
     });
