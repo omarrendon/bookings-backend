@@ -18,7 +18,7 @@ router.post("/", registerReservation);
 router.get(
   "/",
   authenticateToken,
-  authorizeRoles("admin", "owner"),
+  authorizeRoles(["admin", "owner"]),
   getAllReservations
 );
 router.put(

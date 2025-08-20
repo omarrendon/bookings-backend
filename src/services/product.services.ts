@@ -21,7 +21,6 @@ export const saveProduct = async (
     });
     return { newProduct };
   } catch (error) {
-    console.error("Error saving product:", error);
     throw new Error("Failed to save product");
   }
 };

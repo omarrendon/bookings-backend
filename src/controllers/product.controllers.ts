@@ -22,7 +22,6 @@ declare global {
 export const createProduct = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
-
     const { error, value } = productSchema.validate(req.body);
     if (error) {
       return res.status(400).json({
@@ -70,11 +69,8 @@ export const getProducts = async (req: Request, res: Response) => {
 
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
-    console.log("Deleting product...");
     const productId = req.params.id;
-    console.log("Ptoduct id:", productId);
     const userId = req.user?.userId;
-    console.log("User id:", userId);
 
     if (!productId || !userId) {
       throw new Error("ID de producto o usuario no proporcionado.");
