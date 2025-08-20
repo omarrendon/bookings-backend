@@ -69,11 +69,22 @@ export const getAllReservations = async (
   try {
     let where: any = {};
 
+    console.log(
+      "Init getAllReservations - SERVICE :",
+      userId,
+      "role:",
+      role,
+      "business_id:",
+      business_id
+    );
+
     if (role === "owner") {
-      const businessId = await getBusinessByUserId(userId);
-      if (!businessId)
+      console.log("User is owner, fetching business...");
+      const businessObj = await getBusinessByUserId(userId);
+      console.log("Business ID for owner:", businessObj);
+      if (!businessObj || !businessObj.business)
         throw new Error("No se encontró el negocio del propietario.");
-      where.business_id = businessId?.getDataValue("id");
+      where.business_id = businessObj.business?.get("id");
     }
     if (role === "admin" && business_id) {
       where.business_id = business_id;

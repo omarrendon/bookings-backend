@@ -40,6 +40,7 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user; // Obtenemos el usuario del request
+
       if (!user || !roles.includes(user.role)) {
         return res.status(403).json({
           message: "No tienes permisos necesarios para este recurso.",
@@ -48,9 +49,11 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
       }
       if (user.role === "admin") return next();
       //  Si es owner, validar propiedad (solo si se pasó config)
+
       if (user.role === "owner" && config) {
         const { model, ownerField, resourceIdParam = "id", through } = config;
         // Buscar ID en params, body o query
+
         const resourceId =
           req.params[resourceIdParam] ||
           req.body[resourceIdParam] ||
@@ -85,7 +88,6 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
           const relatedResource = await through.relatedModel.findByPk(
             relatedId
           );
-
           if (!relatedResource) {
             return res.status(404).json({
               message: "Recurso relacionado no encontrado.",
@@ -106,9 +108,10 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
       }
       return next();
     } catch (error) {
-      console.error("Error en la autorización de roles:", error);
       return res.status(500).json({
-        message: "Error interno del servidor.",
+        message:
+          "Error interno del servidor." +
+          (error instanceof Error ? error.message : ""),
         success: false,
       });
     }

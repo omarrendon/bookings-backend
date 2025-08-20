@@ -32,14 +32,9 @@ export const getAllReservations = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
     const role = req.user?.role;
-    const business_id = req.query.business_id as string | string[] | undefined;
-
-    if (role !== "admin" && role !== "owner") {
-      return res.status(403).json({
-        message: "No tienes permisos para ver las reservaciones.",
-        success: false,
-      });
-    }
+    const { business_id } = req.params as {
+      business_id: string | string[] | undefined;
+    };
 
     const reservations = await reservationService.getAllReservations(
       userId,

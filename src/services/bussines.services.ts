@@ -96,7 +96,7 @@ export const getBusinessByUserId = async (userId: string | undefined) => {
       );
     }
     const business = await Business.findOne({
-      where: { id: userId },
+      where: { owner_id: userId },
       include: [
         { model: User, as: "owner", attributes: ["id", "name", "email"] },
       ],
