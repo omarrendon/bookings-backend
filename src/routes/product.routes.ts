@@ -20,15 +20,7 @@ const route = Router();
 route.post(
   "/",
   authenticateToken,
-  authorizeRoles(["admin", "owner"], {
-    model: Product, // Assuming you have a Product model defined
-    resourceIdParam: "id",
-    through: {
-      relationField: "business_id", // Assuming this is the field in Product that relates to Business
-      relatedModel: Business, // Assuming you have a Business model defined
-      relatedOwnerField: "owner_id", // Adjust this based on your Business model's structure
-    },
-  }),
+  authorizeRoles(["admin", "owner"]),
   createProduct
 );
 route.get("/:id", getProducts);

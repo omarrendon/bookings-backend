@@ -7,16 +7,22 @@ import * as reservationService from "../services/reservation.services";
 
 export const registerReservation = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
     const { error, value } = createReservationSchema.validate(req.body);
-
     if (error)
       return res.status(400).json({ message: error.message, success: false });
 
-    const reservation = await reservationService.createReservation(
-      value,
-      userId
-    );
+    const validateBusinessProducts =
+      await reservationService.validateBusinessProducts(
+        value.products,
+        value.business_id
+      );
+    if (!validateBusinessProducts)
+      return res.status(400).json({
+        message: validateBusinessProducts,
+        success: false,
+      });
+
+    const reservation = await reservationService.createReservation(value);
     res.status(201).json({
       message: "Reservación creada correctamente.",
       data: reservation,

@@ -28,10 +28,48 @@ interface ReservationData {
   [key: string]: any;
 }
 
-export const createReservation = async (
-  reservationData: ReservationData,
-  userId: string | undefined
-) => {
+export const validateBusinessProducts = async (
+  products: ReservationProductInput[],
+  businessId: string
+): Promise<boolean> => {
+  try {
+    const productIds = products.map(p => p.product_id);
+    const validProducts = await Product.findAll({
+      where: {
+        id: productIds,
+        business_id: businessId,
+      },
+    });
+    const validProductIds = validProducts.map(product =>
+      product?.get("id")?.toString()
+    );
+
+    const invalidProductsIds = productIds.filter(
+      id => !validProductIds.includes(id)
+    );
+
+    if (invalidProductsIds.length > 0) {
+      const errorMessage = `Los siguientes ID's de los productos no pertenecen al negocio: ${invalidProductsIds.join(
+        ", "
+      )}`;
+      return Promise.reject(new Error(errorMessage));
+    }
+
+    return validProducts.length === products.length;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(
+        `Error al validar productos del negocio: ${error.message}`
+      );
+    } else {
+      throw new Error(
+        "Error al validar productos del negocio: Error desconocido"
+      );
+    }
+  }
+};
+
+export const createReservation = async (reservationData: ReservationData) => {
   try {
     const { business_id, products, ...data } = reservationData;
     const reservation = await Reservation.create({
@@ -69,19 +107,8 @@ export const getAllReservations = async (
   try {
     let where: any = {};
 
-    console.log(
-      "Init getAllReservations - SERVICE :",
-      userId,
-      "role:",
-      role,
-      "business_id:",
-      business_id
-    );
-
     if (role === "owner") {
-      console.log("User is owner, fetching business...");
       const businessObj = await getBusinessByUserId(userId);
-      console.log("Business ID for owner:", businessObj);
       if (!businessObj || !businessObj.business)
         throw new Error("No se encontró el negocio del propietario.");
       where.business_id = businessObj.business?.get("id");
