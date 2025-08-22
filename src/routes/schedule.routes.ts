@@ -1,7 +1,36 @@
-import express from "express";
+// DEPENDENCIES
+import { Router } from "express";
+// CONTROLLERS
+import {
+  getSchedulesByBusiness,
+  createSchedule,
+} from "../controllers/schedule.controllers";
+import {
+  authenticateToken,
+  authorizeRoles,
+} from "../middlewares/auth.middleware";
+// MODELS
+import Schedule from "../models/schedule.model";
+import Business from "../models/business.model";
 
-const router = express.Router();
+const router = Router();
 
-router.get("/");
+router.get("/:business_id", getSchedulesByBusiness);
+router.post(
+  "/",
+  authenticateToken,
+  authorizeRoles(
+    ["admin", "owner"]
+    // , {
+    // model: Schedule,
+    // resourceIdParam: "id",
+    // through: {
+    //   relatedOwnerField: "business_id",
+    //   relatedModel: Business,
+    //   relationField: "owner_id",
+    // },}
+  ),
+  createSchedule
+); // Assuming createSchedule is defined in the controller
 
 export default router;

@@ -27,6 +27,7 @@ app.use("/api/business", bussinessRoutes);
 app.use("/api/category", categoriesRoutes);
 app.use("/api/product", productRoutes);
 app.use("/api/reservation", reservationRoutes);
+app.use("/api/schedule", schedulesRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

@@ -9,6 +9,7 @@ import {
   saveProduct,
   updateExistentProduct,
 } from "../services/product.services";
+import { isBusinessOwner } from "../utils/utils";
 
 // Extend Express Request interface to include 'user'
 declare global {
@@ -26,6 +27,14 @@ export const createProduct = async (req: Request, res: Response) => {
     if (error) {
       return res.status(400).json({
         message: "Campos requeridos faltantes o inválidos",
+        success: false,
+      });
+    }
+
+    const businessOwner = await isBusinessOwner(value.businessId, userId);
+    if (!businessOwner.success) {
+      return res.status(403).json({
+        message: businessOwner.message,
         success: false,
       });
     }

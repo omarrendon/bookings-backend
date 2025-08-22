@@ -9,12 +9,12 @@ export const saveProduct = async (
   userId: string | undefined
 ) => {
   try {
-    const bussinessOwner = await Business.findOne({
-      where: { id: product.business_id, owner_id: userId },
-    });
-    if (!bussinessOwner) {
-      throw new Error("Negocio no encontrado o no autorizado");
-    }
+    // const bussinessOwner = await Business.findOne({
+    //   where: { id: product.business_id, owner_id: userId },
+    // });
+    // if (!bussinessOwner) {
+    //   throw new Error("Negocio no encontrado o no autorizado");
+    // }
 
     const newProduct = await Product.create({
       ...product,

@@ -28,11 +28,11 @@ const Schedule = sequelize.define(
     },
     open_time: {
       type: DataTypes.TIME,
-      allowNull: false,
+      allowNull: true,
     },
     close_time: {
       type: DataTypes.TIME,
-      allowNull: false,
+      allowNull: true,
     },
     business_id: {
       type: DataTypes.INTEGER,
@@ -51,6 +51,11 @@ const Schedule = sequelize.define(
     updatedAt: "updated_at",
   }
 );
+
+Business.hasMany(Schedule, {
+  foreignKey: "business_id",
+  as: "schedules",
+});
 
 Schedule.belongsTo(Business, {
   foreignKey: "business_id",

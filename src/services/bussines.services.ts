@@ -97,9 +97,9 @@ export const getBusinessByUserId = async (userId: string | undefined) => {
         { model: User, as: "owner", attributes: ["id", "name", "email"] },
       ],
     });
-    if (!business) {
-      throw new Error("Negocio no encontrado para el usuario proporcionado.");
-    }
+    // if (!business) {
+    //   throw new Error("Negocio no encontrado para el usuario proporcionado.");
+    // }
     return { business };
   } catch (error) {
     throw new Error(`Error al obtener negocio: ${error}`);
