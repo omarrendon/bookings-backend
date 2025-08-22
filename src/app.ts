@@ -8,6 +8,7 @@ import authRoutes from "./routes/auth.routes";
 import categoriesRoutes from "./routes/category.routes";
 import productRoutes from "./routes/product.routes";
 import reservationRoutes from "./routes/reservation.routes";
+import schedulesRoutes from "./routes/schedule.routes";
 
 dotenv.config();
 const app = express();
