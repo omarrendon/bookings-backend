@@ -5,26 +5,25 @@ import { DataTypes, QueryInterface } from "sequelize";
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface: QueryInterface): Promise<void> {
-    await queryInterface.changeColumn("reservations", "start_time", {
-      type: DataTypes.DATE,
-      allowNull: false, // ✅ ahora permite valores nulos
-    });
-
-    await queryInterface.changeColumn("reservations", "end_time", {
-      type: DataTypes.DATE,
-      allowNull: false, // ✅ ahora permite valores nulos
-    });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE "reservations"
+      ALTER COLUMN "start_time" TYPE TIMESTAMP USING CURRENT_DATE + "start_time";
+    `);
+    await queryInterface.sequelize.query(`
+      ALTER TABLE "reservations"
+      ALTER COLUMN "end_time" TYPE TIMESTAMP USING CURRENT_DATE + "end_time";
+    `);
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
-    await queryInterface.changeColumn("reservations", "start_time", {
-      type: DataTypes.TIME,
-      allowNull: true, // ❌ vuelve a no permitir valores nulos
-    });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE "reservations"
+      ALTER COLUMN "start_time" TYPE TIME USING "start_time"::TIME;
+    `);
 
-    await queryInterface.changeColumn("reservations", "end_time", {
-      type: DataTypes.TIME,
-      allowNull: false, // ❌ vuelve a no permitir valores nulos
-    });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE "reservations"
+      ALTER COLUMN "end_time" TYPE TIME USING "end_time"::TIME;
+    `);
   },
 };

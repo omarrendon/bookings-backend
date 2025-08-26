@@ -74,8 +74,9 @@ export const validateBusinessProducts = async (
 export const createReservation = async (reservationData: ReservationData) => {
   try {
     const { business_id, products, ...data } = reservationData;
-    console.log("Creating reservation SERVICE = ", reservationData);
+    console.log("Creating reservation SERVICE ");
     // console.log("Products = ", products);
+    // console.log("Data start time 1.- = ", data.start_time);
 
     const productsFounded = await Product.findAll({
       where: {
@@ -83,16 +84,20 @@ export const createReservation = async (reservationData: ReservationData) => {
         business_id,
       },
     });
+    // console.log("Products found = ", productsFounded);
     if (productsFounded.length === 0)
       throw new Error("No se encontraron productos.");
 
     const totalDurationInMinutes = productsFounded.reduce((total, product) => {
+      // console.log("Product = ", product);
       const duration = Math.trunc(
         product.get("estimated_delivery_time") as number
       );
+      // console.log("Duration = ", duration);
       return total + (duration || 0);
     }, 0);
     console.log("Total duration in minutes = ", totalDurationInMinutes);
+    // console.log("Data start time 2.- = ", data.start_time);
 
     const startDate = new Date(data.start_time);
     console.log("Start date = ", startDate);
@@ -128,11 +133,11 @@ export const createReservation = async (reservationData: ReservationData) => {
     const reservation = await Reservation.create({
       ...data,
       business_id,
-      start_time: startDate.toISOString(),
-      end_time: endDate.toISOString(),
+      start_time: startDate,
+      end_time: endDate,
     });
 
-    console.log("Created reservation = ", reservation);
+    console.log("Created reservation === ", reservation);
     if (!reservation) throw new Error("No se pudo crear la reservación.");
 
     const productEntries: {

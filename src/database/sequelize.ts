@@ -11,4 +11,8 @@ export const sequelize = new Sequelize({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   logging: false,
+  timezone: process.env.DB_TIMEZONE || "00:00", // Configurar zona horaria a UTC (00:00)
+  dialectOptions: {
+    useUTC: true, // Para almacenar las fechas en UTC
+  },
 });
