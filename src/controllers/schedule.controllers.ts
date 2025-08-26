@@ -79,3 +79,47 @@ export const getSchedulesByBusiness = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const updateSchedule = async (req: Request, res: Response) => {
+  try {
+    const { schedule_id } = req.params;
+    console.log("PARAMS ID:", req.params);
+    const { error, value } = createScheduleSchema.validate(req.body);
+    if (error) {
+      return res
+        .status(400)
+        .json({ message: error.details[0].message, success: false });
+    }
+
+    const { hours } = value;
+    if (!Array.isArray(hours) || hours.length === 0) {
+      return res.status(400).json({
+        message: "El arreglo de horas no puede estar vacío.",
+        success: false,
+      });
+    }
+
+    const { updatedSchedule } = await scheduleService.updateSchedule(
+      schedule_id,
+      value
+    );
+
+    if (!updatedSchedule) {
+      return res
+        .status(500)
+        .json({ message: "Error al actualizar el horario.", success: false });
+    }
+
+    return res.status(200).json({
+      data: updatedSchedule,
+      message: "Horario actualizado exitosamente.",
+      success: true,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({
+      message: "Error interno del servidor: " + errorMessage,
+      success: false,
+    });
+  }
+};

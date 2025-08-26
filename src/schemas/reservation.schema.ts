@@ -7,6 +7,8 @@ export const createReservationSchema = Joi.object({
   customer_name: Joi.string().required().max(255),
   customer_email: Joi.string().email().required().max(255),
   customer_phone: Joi.string().required().max(20),
+  proof_of_payment: Joi.string().optional().max(500),
+  start_time: Joi.date().required(),
   products: Joi.array()
     .items(
       Joi.object({

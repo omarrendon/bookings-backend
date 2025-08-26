@@ -71,6 +71,14 @@ const Reservation = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    start_time: {
+      type: DataTypes.TIME,
+      allowNull: false,
+    },
+    end_time: {
+      type: DataTypes.TIME,
+      allowNull: false,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,

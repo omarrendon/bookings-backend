@@ -4,6 +4,7 @@ import { Router } from "express";
 import {
   getSchedulesByBusiness,
   createSchedule,
+  updateSchedule,
 } from "../controllers/schedule.controllers";
 import {
   authenticateToken,
@@ -31,6 +32,12 @@ router.post(
     // },}
   ),
   createSchedule
-); // Assuming createSchedule is defined in the controller
+);
+router.put(
+  "/:id",
+  authenticateToken,
+  authorizeRoles(["admin", "owner"]),
+  updateSchedule
+);
 
 export default router;

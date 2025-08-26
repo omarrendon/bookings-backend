@@ -49,3 +49,34 @@ export const getSchedulesByBusiness = async (businessId: string) => {
     throw new Error("Error al obtener horarios: " + error);
   }
 };
+
+export const updateSchedule = async (
+  scheduleId: string,
+  scheduleData: ScheduleData
+) => {
+  try {
+    console.log("Updating schedule servce -------", scheduleId);
+    const scheduleDataUpdated = await Schedule.findOne({
+      where: {
+        id: 12,
+      },
+    });
+    console.log("Found schedule to update:", scheduleDataUpdated);
+
+    if (!scheduleDataUpdated) {
+      throw new Error("No se encontró el horario a actualizar.");
+    }
+
+    const [scheduleUpdated] = await Schedule.update(scheduleData, {
+      where: { id: scheduleId },
+    });
+
+    if (!scheduleUpdated) {
+      throw new Error("No se pudo actualizar el horario del negocio.");
+    }
+
+    return { updatedSchedule: scheduleData };
+  } catch (error) {
+    throw new Error("Error al actualizar el horario: " + error);
+  }
+};

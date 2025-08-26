@@ -7,6 +7,7 @@ import * as reservationService from "../services/reservation.services";
 
 export const registerReservation = async (req: Request, res: Response) => {
   try {
+    console.log("Registering reservation CONTROLLER = ", req.body);
     const { error, value } = createReservationSchema.validate(req.body);
     if (error)
       return res.status(400).json({ message: error.message, success: false });
@@ -21,7 +22,7 @@ export const registerReservation = async (req: Request, res: Response) => {
         message: validateBusinessProducts,
         success: false,
       });
-
+    console.log("Validated business products successfully ✅");
     const reservation = await reservationService.createReservation(value);
     res.status(201).json({
       message: "Reservación creada correctamente.",

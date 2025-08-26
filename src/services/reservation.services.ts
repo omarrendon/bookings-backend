@@ -1,3 +1,5 @@
+// Dependencies
+import { Op } from "sequelize";
 // Models
 import Product from "../models/product.model";
 import Reservation from "../models/reservation.model";
@@ -72,10 +74,66 @@ export const validateBusinessProducts = async (
 export const createReservation = async (reservationData: ReservationData) => {
   try {
     const { business_id, products, ...data } = reservationData;
+    console.log("Creating reservation SERVICE = ", reservationData);
+    // console.log("Products = ", products);
+
+    const productsFounded = await Product.findAll({
+      where: {
+        id: products.map(p => p.product_id),
+        business_id,
+      },
+    });
+    if (productsFounded.length === 0)
+      throw new Error("No se encontraron productos.");
+
+    const totalDurationInMinutes = productsFounded.reduce((total, product) => {
+      const duration = Math.trunc(
+        product.get("estimated_delivery_time") as number
+      );
+      return total + (duration || 0);
+    }, 0);
+    console.log("Total duration in minutes = ", totalDurationInMinutes);
+
+    const startDate = new Date(data.start_time);
+    console.log("Start date = ", startDate);
+    const endDate = new Date(
+      startDate.getTime() + totalDurationInMinutes * 60000
+    );
+    console.log("End date = ", endDate);
+
+    const overLappingReservations = await Reservation.findOne({
+      where: {
+        business_id,
+        status: ["pending", "confirmed"],
+        [Op.or]: [
+          {
+            start_time: {
+              [Op.lt]: endDate,
+            },
+          },
+          {
+            end_time: {
+              [Op.gt]: startDate,
+            },
+          },
+        ],
+      },
+    });
+
+    if (overLappingReservations)
+      throw new Error("Ya existe una reserva en ese horario.");
+
+    console.log("Overlapping reservations = ", overLappingReservations);
+
     const reservation = await Reservation.create({
       ...data,
       business_id,
+      start_time: startDate.toISOString(),
+      end_time: endDate.toISOString(),
     });
+
+    console.log("Created reservation = ", reservation);
+    if (!reservation) throw new Error("No se pudo crear la reservación.");
 
     const productEntries: {
       reservation_id: string | number | undefined;
@@ -88,6 +146,7 @@ export const createReservation = async (reservationData: ReservationData) => {
     }));
 
     const response = await ReservationProduct.bulkCreate(productEntries);
+    console.log("Created reservation X products = ", response);
 
     return { reservation, products: response };
   } catch (error) {
