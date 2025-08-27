@@ -27,6 +27,5 @@ export const createScheduleSchema = Joi.object({
           .allow(null), // puede ser null si está cerrado
       })
     )
-    .length(7) // deben venir exactamente 7 días
     .required(),
 });

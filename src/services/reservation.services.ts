@@ -12,6 +12,7 @@ import {
   convertDateToUTC,
   convertUTCDateToLocal,
 } from "../utils/dateUtils";
+import Business from "../models/business.model";
 
 // REGLAS DE NEGOCIO
 /*
@@ -102,7 +103,18 @@ export const createReservation = async (reservationData: ReservationData) => {
     console.log("Start date ===== ", startDate);
     const endDate = addMinutesToDate(startDate, totalDurationInMinutes);
     console.log("End date ===== ", endDate);
-    // const localDate = convertUTCDateToLocal(UTCDate);
+
+    // Validar que el horario se encuentre dentro del horario del negocio
+    console.log("Business ID for horario check: ", business_id);
+
+    // TODO: Validar que la reservación no se cruce con otra reservación existente
+    const businessReservation = await Business.findByPk(business_id);
+    // console.log("Business horario: ", businessReservation);
+    const workingHours = businessReservation?.get("hours_of_operation");
+    if (!workingHours)
+      throw new Error("El negocio no tiene horario establecido.");
+    console.log("Working hours: ", workingHours);
+    return;
 
     const overLappingReservations = await Reservation.findOne({
       where: {

@@ -22,6 +22,7 @@ export const registerReservation = async (req: Request, res: Response) => {
         message: validateBusinessProducts,
         success: false,
       });
+
     console.log("Validated business products successfully ✅");
     const reservation = await reservationService.createReservation(req.body);
     res.status(201).json({
