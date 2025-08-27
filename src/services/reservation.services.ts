@@ -6,6 +6,12 @@ import Reservation from "../models/reservation.model";
 import ReservationProduct from "../models/reservationProduct.model";
 // Services
 import { getBusinessByUserId } from "./bussines.services";
+// Utils
+import {
+  addMinutesToDate,
+  convertDateToUTC,
+  convertUTCDateToLocal,
+} from "../utils/dateUtils";
 
 // REGLAS DE NEGOCIO
 /*
@@ -74,43 +80,35 @@ export const validateBusinessProducts = async (
 export const createReservation = async (reservationData: ReservationData) => {
   try {
     const { business_id, products, ...data } = reservationData;
-    console.log("Creating reservation SERVICE ");
-    // console.log("Products = ", products);
-    // console.log("Data start time 1.- = ", data.start_time);
-
+    console.log("Creating reservation SERVICE =========");
     const productsFounded = await Product.findAll({
       where: {
         id: products.map(p => p.product_id),
         business_id,
       },
     });
-    // console.log("Products found = ", productsFounded);
     if (productsFounded.length === 0)
       throw new Error("No se encontraron productos.");
 
     const totalDurationInMinutes = productsFounded.reduce((total, product) => {
-      // console.log("Product = ", product);
       const duration = Math.trunc(
         product.get("estimated_delivery_time") as number
       );
-      // console.log("Duration = ", duration);
       return total + (duration || 0);
     }, 0);
     console.log("Total duration in minutes = ", totalDurationInMinutes);
-    // console.log("Data start time 2.- = ", data.start_time);
 
-    const startDate = new Date(data.start_time);
-    console.log("Start date = ", startDate);
-    const endDate = new Date(
-      startDate.getTime() + totalDurationInMinutes * 60000
-    );
-    console.log("End date = ", endDate);
+    const startDate = convertDateToUTC(data.start_time);
+    console.log("Start date ===== ", startDate);
+    const endDate = addMinutesToDate(startDate, totalDurationInMinutes);
+    console.log("End date ===== ", endDate);
+    // const localDate = convertUTCDateToLocal(UTCDate);
 
     const overLappingReservations = await Reservation.findOne({
       where: {
         business_id,
         status: ["pending", "confirmed"],
-        [Op.or]: [
+        [Op.and]: [
           {
             start_time: {
               [Op.lt]: endDate,
@@ -124,11 +122,8 @@ export const createReservation = async (reservationData: ReservationData) => {
         ],
       },
     });
-
     if (overLappingReservations)
       throw new Error("Ya existe una reserva en ese horario.");
-
-    console.log("Overlapping reservations = ", overLappingReservations);
 
     const reservation = await Reservation.create({
       ...data,
@@ -136,9 +131,16 @@ export const createReservation = async (reservationData: ReservationData) => {
       start_time: startDate,
       end_time: endDate,
     });
-
-    console.log("Created reservation === ", reservation);
     if (!reservation) throw new Error("No se pudo crear la reservación.");
+
+    reservation.setDataValue(
+      "start_time",
+      convertUTCDateToLocal(reservation.getDataValue("start_time"))
+    );
+    reservation.setDataValue(
+      "end_time",
+      convertUTCDateToLocal(reservation.getDataValue("end_time"))
+    );
 
     const productEntries: {
       reservation_id: string | number | undefined;
@@ -149,9 +151,7 @@ export const createReservation = async (reservationData: ReservationData) => {
       product_id: prod.product_id,
       quantity: prod.quantity,
     }));
-
     const response = await ReservationProduct.bulkCreate(productEntries);
-    console.log("Created reservation X products = ", response);
 
     return { reservation, products: response };
   } catch (error) {

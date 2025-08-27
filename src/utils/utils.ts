@@ -9,7 +9,6 @@ export const isBusinessOwner = async (
     success: false,
     message: "",
   };
-
   const businessOwner = await Business.findOne({
     where: { id: idField, owner_id: userId },
   });

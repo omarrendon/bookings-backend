@@ -24,6 +24,7 @@ export const createProduct = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
     const { error, value } = productSchema.validate(req.body);
+
     if (error) {
       return res.status(400).json({
         message: "Campos requeridos faltantes o inválidos",
@@ -31,7 +32,7 @@ export const createProduct = async (req: Request, res: Response) => {
       });
     }
 
-    const businessOwner = await isBusinessOwner(value.businessId, userId);
+    const businessOwner = await isBusinessOwner(value.business_id, userId);
     if (!businessOwner.success) {
       return res.status(403).json({
         message: businessOwner.message,
