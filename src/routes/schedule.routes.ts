@@ -16,7 +16,7 @@ import Business from "../models/business.model";
 
 const router = Router();
 
-router.get("/:business_id/slots", getSchedulesByBusiness);
+router.get("/:business_id/slots/month", getSchedulesByBusiness);
 router.post(
   "/",
   authenticateToken,

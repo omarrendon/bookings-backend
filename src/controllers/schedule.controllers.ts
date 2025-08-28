@@ -57,15 +57,23 @@ export const createSchedule = async (req: Request, res: Response) => {
 export const getSchedulesByBusiness = async (req: Request, res: Response) => {
   try {
     const { business_id } = req.params;
-    console.log("Business ID from params:", business_id);
+    const { date } = req.query;
+
     if (!business_id) {
       return res
         .status(400)
         .json({ message: "ID del negocio es requerido.", success: false });
     }
+    if (!date) {
+      return res.status(400).json({
+        message: "La fecha es requerida.",
+        success: false,
+      });
+    }
 
     const schedulesBusiness = await scheduleService.getSchedulesByBusiness(
-      business_id
+      business_id,
+      date as string
     );
     return res.status(200).json({
       data: schedulesBusiness,
@@ -81,6 +89,7 @@ export const getSchedulesByBusiness = async (req: Request, res: Response) => {
   }
 };
 
+// TODO: Arreglar updateSchedule
 export const updateSchedule = async (req: Request, res: Response) => {
   try {
     const { schedule_id } = req.params;
