@@ -1,5 +1,7 @@
 // Models
+import { Op } from "sequelize";
 import Business from "../models/business.model";
+import Reservation from "../models/reservation.model";
 import Schedule from "../models/schedule.model";
 
 interface ScheduleData {
@@ -43,6 +45,54 @@ export const getSchedulesByBusiness = async (businessId: string) => {
         },
       ],
     });
+    if (!schedulesBusiness) return { slots: [] };
+
+    const reservations = await Reservation.findAll({
+      where: {
+        business_id: businessId,
+        // start_time: { [Op.between]: [startOfDay(parsedDate), endOfDay(parsedDate)] },
+      },
+    });
+    const reservationsRanges = reservations.map(reservation => ({
+      start_time: reservation.get("start_time"),
+      end_time: reservation.get("end_time"),
+    }));
+    console.log("Reservations ranges -----", reservationsRanges);
+
+    const slots: { start: string; end: string; isBooked: boolean }[] = [];
+
+    for (const schedule of schedulesBusiness) {
+      // const day = schedule.get("day");
+      const open_time = schedule.get("open_time");
+      const close_time = schedule.get("close_time");
+
+      if (open_time && close_time) {
+        // Crear slots de 60 minutos
+        // let currentTime = new Date(`T${open_time}Z`);
+        // const endTime = new Date(`T${close_time}Z`);
+        // while (currentTime < endTime) {
+        //   const slotStart = currentTime.toISOString().substring(11, 16);
+        //   currentTime.setMinutes(currentTime.getMinutes() + 30);
+        //   const slotEnd = currentTime.toISOString().substring(11, 16);
+        //   // Verificar si el slot está reservado
+        //   const isBooked = reservationsRanges.some(reservation => {
+        //     const reservationStart = new Date(reservation.start_time as string);
+        //     const reservationEnd = new Date(reservation.end_time as string);
+        //     const slotStartDate = new Date(`1970-01-01T${slotStart}Z`);
+        //     const slotEndDate = new Date(`1970-01-01T${slotEnd}Z`);
+        //     return (
+        //       (slotStartDate >= reservationStart &&
+        //         slotStartDate < reservationEnd) ||
+        //       (slotEndDate > reservationStart &&
+        //         slotEndDate <= reservationEnd) ||
+        //       (slotStartDate <= reservationStart &&
+        //         slotEndDate >= reservationEnd)
+        //     );
+        //   });
+        //   slots.push({ start: slotStart, end: slotEnd, isBooked });
+        // }
+      }
+    }
 
     return schedulesBusiness;
   } catch (error) {

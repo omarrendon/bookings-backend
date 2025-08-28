@@ -57,6 +57,7 @@ export const createSchedule = async (req: Request, res: Response) => {
 export const getSchedulesByBusiness = async (req: Request, res: Response) => {
   try {
     const { business_id } = req.params;
+    console.log("Business ID from params:", business_id);
     if (!business_id) {
       return res
         .status(400)
