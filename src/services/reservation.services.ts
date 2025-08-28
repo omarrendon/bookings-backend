@@ -13,6 +13,7 @@ import {
   convertUTCDateToLocal,
 } from "../utils/dateUtils";
 import Business from "../models/business.model";
+import Schedule from "../models/schedule.model";
 
 // REGLAS DE NEGOCIO
 /*
@@ -25,6 +26,14 @@ import Business from "../models/business.model";
 - Una reservación no puede ser actualizada si ya fue completada.
 - Solo el propietario de la reservación puede actualizar su estado.
 */
+
+interface ScheduleDay {
+  id: string | number;
+  day: string;
+  open_time: string;
+  close_time: string;
+  [key: string]: any;
+}
 
 interface ReservationProductInput {
   product_id: string;
@@ -81,7 +90,6 @@ export const validateBusinessProducts = async (
 export const createReservation = async (reservationData: ReservationData) => {
   try {
     const { business_id, products, ...data } = reservationData;
-    console.log("Creating reservation SERVICE =========");
     const productsFounded = await Product.findAll({
       where: {
         id: products.map(p => p.product_id),
@@ -97,24 +105,57 @@ export const createReservation = async (reservationData: ReservationData) => {
       );
       return total + (duration || 0);
     }, 0);
-    console.log("Total duration in minutes = ", totalDurationInMinutes);
 
     const startDate = convertDateToUTC(data.start_time);
-    console.log("Start date ===== ", startDate);
     const endDate = addMinutesToDate(startDate, totalDurationInMinutes);
-    console.log("End date ===== ", endDate);
 
-    // Validar que el horario se encuentre dentro del horario del negocio
-    console.log("Business ID for horario check: ", business_id);
+    const businessReservation = await Business.findByPk(business_id, {
+      include: [
+        {
+          model: Schedule,
+          as: "schedules",
+        },
+      ],
+    });
 
-    // TODO: Validar que la reservación no se cruce con otra reservación existente
-    const businessReservation = await Business.findByPk(business_id);
-    // console.log("Business horario: ", businessReservation);
-    const workingHours = businessReservation?.get("hours_of_operation");
-    if (!workingHours)
-      throw new Error("El negocio no tiene horario establecido.");
-    console.log("Working hours: ", workingHours);
-    return;
+    const workingHours = businessReservation?.getDataValue("schedules");
+    const dayOfWeek = startDate.toLocaleDateString("en-US", {
+      weekday: "long",
+    });
+
+    const dayOfReservation: ScheduleDay[] | undefined = workingHours?.filter(
+      (day: ScheduleDay) => day.day === dayOfWeek
+    );
+
+    const startDateHour = startDate.getHours();
+    const startDateMinute = startDate.getMinutes();
+    const endDateHour = endDate.getHours();
+    const endDateMinute = endDate.getMinutes();
+
+    const scheduleValidate = dayOfReservation?.map(
+      (day: ScheduleDay): boolean => {
+        if (!day.open_time || !day.close_time) {
+          throw new Error(
+            "El negocio está cerrado el día seleccionado para la reservación."
+          );
+        }
+        const [openHour, openMinute] = day.open_time.split(":").map(Number);
+        const [closeHour, closeMinute] = day.close_time.split(":").map(Number);
+
+        if (startDateHour >= openHour && endDateHour <= closeHour) return true;
+        if (endDateHour > closeHour && startDateHour < openHour) {
+          throw new Error(
+            "La hora de finalización de la reservación es después de la hora de cierre del negocio."
+          );
+        }
+        return false;
+      }
+    );
+    if (!scheduleValidate?.includes(true)) {
+      throw new Error(
+        "La hora de la reservación no está dentro del horario laboral del negocio."
+      );
+    }
 
     const overLappingReservations = await Reservation.findOne({
       where: {
