@@ -87,10 +87,6 @@ const Business = sequelize.define(
       type: DataTypes.JSONB,
       allowNull: true,
     },
-    hours_of_operation: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-    },
     social_links: {
       type: DataTypes.JSONB,
       allowNull: true,

@@ -24,29 +24,6 @@ export const createBussinessSchema = Joi.object({
   main_image_url: Joi.string().uri().optional(),
   gallery_images: Joi.array().items(Joi.string().uri()).optional(),
   is_verified: Joi.boolean().default(false),
-  hours_of_operation: Joi.array()
-    .items(
-      Joi.object({
-        day: Joi.string()
-          .valid(
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-            "Sunday"
-          )
-          .required(),
-        open: Joi.string()
-          .pattern(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/)
-          .required(),
-        close: Joi.string()
-          .pattern(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/)
-          .required(),
-      })
-    )
-    .required(),
   raiting: Joi.number().min(0).max(5).optional(),
   owner_id: Joi.string().required(),
   createdAt: Joi.date().default(() => new Date()),

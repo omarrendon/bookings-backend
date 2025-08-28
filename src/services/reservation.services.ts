@@ -216,7 +216,7 @@ export const createReservation = async (reservationData: ReservationData) => {
   }
 };
 
-export const getAllReservations = async (
+export const getAllReservationsForBusiness = async (
   userId: string | undefined,
   role: string | undefined,
   business_id?: string | string[] | undefined

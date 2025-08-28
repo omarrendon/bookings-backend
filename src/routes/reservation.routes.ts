@@ -8,8 +8,8 @@ import {
 // Controllers
 import {
   registerReservation,
-  getAllReservations,
   updateReservationStatus,
+  getAllReservationsForBusiness,
 } from "../controllers/reservation.controllers";
 import Reservation from "../models/reservation.model";
 import Business from "../models/business.model";
@@ -21,7 +21,7 @@ router.get(
   "/:business_id",
   authenticateToken,
   authorizeRoles(["admin", "owner"]),
-  getAllReservations
+  getAllReservationsForBusiness
 );
 router.put(
   "/:id",
