@@ -89,19 +89,16 @@ export const getSchedulesByBusiness = async (req: Request, res: Response) => {
   }
 };
 
-// TODO: Arreglar updateSchedule
 export const updateSchedule = async (req: Request, res: Response) => {
   try {
-    const { schedule_id } = req.params;
-    console.log("PARAMS ID:", req.params);
-    const { error, value } = createScheduleSchema.validate(req.body);
+    const { error } = createScheduleSchema.validate(req.body);
     if (error) {
       return res
         .status(400)
         .json({ message: error.details[0].message, success: false });
     }
 
-    const { hours } = value;
+    const { hours } = req.body;
     if (!Array.isArray(hours) || hours.length === 0) {
       return res.status(400).json({
         message: "El arreglo de horas no puede estar vacío.",
@@ -109,16 +106,7 @@ export const updateSchedule = async (req: Request, res: Response) => {
       });
     }
 
-    const { updatedSchedule } = await scheduleService.updateSchedule(
-      schedule_id,
-      value
-    );
-
-    if (!updatedSchedule) {
-      return res
-        .status(500)
-        .json({ message: "Error al actualizar el horario.", success: false });
-    }
+    const { updatedSchedule } = await scheduleService.updateSchedule(req.body);
 
     return res.status(200).json({
       data: updatedSchedule,

@@ -132,33 +132,29 @@ export const getSchedulesByBusiness = async (
   }
 };
 
-// TODO: Arreglar updateSchedule
-export const updateSchedule = async (
-  scheduleId: string,
-  scheduleData: ScheduleData
-) => {
+export const updateSchedule = async (scheduleData: ScheduleData) => {
   try {
-    console.log("Updating schedule servce -------", scheduleId);
-    const scheduleDataUpdated = await Schedule.findOne({
-      where: {
-        id: 12,
-      },
-    });
-    console.log("Found schedule to update:", scheduleDataUpdated);
+    const { hours } = scheduleData;
 
-    if (!scheduleDataUpdated) {
-      throw new Error("No se encontró el horario a actualizar.");
-    }
-
-    const [scheduleUpdated] = await Schedule.update(scheduleData, {
-      where: { id: scheduleId },
+    // Elimina los horarios existentes para el negocio
+    await Schedule.destroy({
+      where: { business_id: scheduleData.business_id },
     });
 
-    if (!scheduleUpdated) {
+    // Inserta todos los nuevos registros recibidos en la petición
+    const updatedHoursResults = await Schedule.bulkCreate(
+      hours.map(hour => ({
+        day: hour.day,
+        open_time: hour.open_time,
+        close_time: hour.close_time,
+        business_id: scheduleData.business_id,
+      }))
+    );
+
+    if (!updatedHoursResults) {
       throw new Error("No se pudo actualizar el horario del negocio.");
     }
-
-    return { updatedSchedule: scheduleData };
+    return { updatedSchedule: updatedHoursResults };
   } catch (error) {
     throw new Error("Error al actualizar el horario: " + error);
   }

@@ -20,23 +20,21 @@ router.get("/:business_id/slots/month", getSchedulesByBusiness);
 router.post(
   "/",
   authenticateToken,
-  authorizeRoles(
-    ["admin", "owner"]
-    // , {
-    // model: Schedule,
-    // resourceIdParam: "id",
-    // through: {
-    //   relatedOwnerField: "business_id",
-    //   relatedModel: Business,
-    //   relationField: "owner_id",
-    // },}
-  ),
+  authorizeRoles(["admin", "owner"]),
   createSchedule
 );
 router.put(
   "/:id",
   authenticateToken,
-  authorizeRoles(["admin", "owner"]),
+  authorizeRoles(["admin", "owner"], {
+    model: Schedule,
+    resourceIdParam: "id",
+    through: {
+      relatedOwnerField: "owner_id",
+      relatedModel: Business,
+      relationField: "business_id",
+    },
+  }),
   updateSchedule
 );
 

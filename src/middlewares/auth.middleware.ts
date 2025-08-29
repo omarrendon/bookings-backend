@@ -40,7 +40,6 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user; // Obtenemos el usuario del request
-
       if (!user || !roles.includes(user.role)) {
         return res.status(403).json({
           message: "No tienes permisos necesarios para este recurso.",
@@ -53,7 +52,6 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
       if (user.role === "owner" && config) {
         const { model, ownerField, resourceIdParam = "id", through } = config;
         // Buscar ID en params, body o query
-
         const resourceId =
           req.params[resourceIdParam] ||
           req.body[resourceIdParam] ||
