@@ -198,13 +198,14 @@ export const createReservation = async (reservationData: ReservationData) => {
     );
 
     const emailFieldsInformation = {
-      to: data.email,
+      to: data.customer_email,
+      name: data.customer_name,
+      businessName: businessReservation?.getDataValue("name"),
       reservationId: reservation.getDataValue("id"),
       startTime: reservation.getDataValue("start_time"),
       endTime: reservation.getDataValue("end_time"),
       products: reservation.getDataValue("products"),
     };
-    console.log("Email fields information -----", emailFieldsInformation);
     await emailService.sendEmailToRegisterReservation(emailFieldsInformation);
 
     const productEntries: {

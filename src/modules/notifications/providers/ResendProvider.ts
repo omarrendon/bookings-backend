@@ -13,7 +13,6 @@ export class ResendProvider implements IEmailProvider {
 
   async sendEmail(to: string, subject: string, body: string): Promise<void> {
     try {
-      console.log(`Sending email to ${to} with subject "${subject}"`);
       await this.resend.emails.send({
         from: this.from,
         to,

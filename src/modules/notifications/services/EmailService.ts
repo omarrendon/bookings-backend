@@ -1,9 +1,7 @@
 // Provider
 import { EmailProviderFactory } from "../providers/EmailProviderFactory";
 // Templates
-import registerReservationTemplate, {
-  IReservationDetails,
-} from "../templates/BookingRegisterTemplate";
+import registerReservationTemplate from "../templates/BookingRegisterTemplate";
 
 export class EmailService {
   private provider;
@@ -14,8 +12,6 @@ export class EmailService {
 
   public async sendEmailToRegisterReservation(emailFieldsInformation: any) {
     const { to, ...body } = emailFieldsInformation;
-    console.log("Sending registration email to:", to);
-    console.log("Email body content:", body);
     const { subject, bodyTemplate } = registerReservationTemplate(body);
     await this.provider.sendEmail(to, subject, bodyTemplate);
   }
