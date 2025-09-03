@@ -13,6 +13,7 @@ export class ResendProvider implements IEmailProvider {
 
   async sendEmail(to: string, subject: string, body: string): Promise<void> {
     try {
+      console.log(`Sending email to ${to} with subject "${subject}"`);
       await this.resend.emails.send({
         from: this.from,
         to,
@@ -23,13 +24,4 @@ export class ResendProvider implements IEmailProvider {
       throw new Error("Error al enviar el correo: " + error);
     }
   }
-
-  // async sendVerificationEmail(to: string, code: string): Promise<void> {
-  //   const subject = "Verifica tu correo electrónico";
-  //   const body = `
-  //     <h1>Verifica tu correo electrónico</h1>
-  //     <p>Tu código de verificación es: <strong>${code}</strong></p>
-  //   `;
-  //   await this.sendEmail(to, subject, body);
-  // };
 }

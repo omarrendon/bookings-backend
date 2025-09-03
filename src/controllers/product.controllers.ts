@@ -9,6 +9,8 @@ import {
   saveProduct,
   updateExistentProduct,
 } from "../services/product.services";
+import { EmailService } from "../modules/notifications/services/EmailService";
+// Utils
 import { isBusinessOwner } from "../utils/utils";
 
 // Extend Express Request interface to include 'user'
@@ -19,6 +21,7 @@ declare global {
     }
   }
 }
+const emailService = new EmailService();
 
 export const createProduct = async (req: Request, res: Response) => {
   try {

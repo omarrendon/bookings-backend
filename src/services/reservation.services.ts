@@ -14,6 +14,7 @@ import {
 } from "../utils/dateUtils";
 import Business from "../models/business.model";
 import Schedule from "../models/schedule.model";
+import { EmailService } from "../modules/notifications/services/EmailService";
 
 // REGLAS DE NEGOCIO
 /*
@@ -89,6 +90,7 @@ export const validateBusinessProducts = async (
 
 export const createReservation = async (reservationData: ReservationData) => {
   try {
+    const emailService = new EmailService();
     const { business_id, products, ...data } = reservationData;
     const productsFounded = await Product.findAll({
       where: {
@@ -194,6 +196,16 @@ export const createReservation = async (reservationData: ReservationData) => {
       "end_time",
       convertUTCDateToLocal(reservation.getDataValue("end_time"))
     );
+
+    const emailFieldsInformation = {
+      to: data.email,
+      reservationId: reservation.getDataValue("id"),
+      startTime: reservation.getDataValue("start_time"),
+      endTime: reservation.getDataValue("end_time"),
+      products: reservation.getDataValue("products"),
+    };
+    console.log("Email fields information -----", emailFieldsInformation);
+    await emailService.sendEmailToRegisterReservation(emailFieldsInformation);
 
     const productEntries: {
       reservation_id: string | number | undefined;
