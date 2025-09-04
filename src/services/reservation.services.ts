@@ -15,6 +15,7 @@ import {
 import Business from "../models/business.model";
 import Schedule from "../models/schedule.model";
 import { EmailService } from "../modules/notifications/services/EmailService";
+import { User } from "../models/user.model";
 
 // REGLAS DE NEGOCIO
 /*
@@ -117,9 +118,14 @@ export const createReservation = async (reservationData: ReservationData) => {
           model: Schedule,
           as: "schedules",
         },
+        {
+          model: User,
+          as: "user",
+        },
       ],
     });
 
+    const user = businessReservation?.getDataValue("user");
     const workingHours = businessReservation?.getDataValue("schedules");
     const dayOfWeek = startDate.toLocaleDateString("en-US", {
       weekday: "long",
@@ -198,6 +204,7 @@ export const createReservation = async (reservationData: ReservationData) => {
     );
 
     const emailFieldsInformation = {
+      toBusiness: user?.getDataValue("email"),
       to: data.customer_email,
       name: data.customer_name,
       businessName: businessReservation?.getDataValue("name"),
@@ -207,6 +214,7 @@ export const createReservation = async (reservationData: ReservationData) => {
       products: reservation.getDataValue("products"),
     };
     await emailService.sendEmailToRegisterReservation(emailFieldsInformation);
+    await emailService.sendEmailToNewReservation(emailFieldsInformation);
 
     const productEntries: {
       reservation_id: string | number | undefined;

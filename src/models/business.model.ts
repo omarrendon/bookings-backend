@@ -107,7 +107,7 @@ const Business = sequelize.define(
 
 Business.belongsTo(User, {
   foreignKey: "owner_id",
-  as: "owner",
+  as: "user",
 });
 
 export default Business;

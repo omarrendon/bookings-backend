@@ -57,4 +57,9 @@ Schedule.belongsTo(Business, {
   as: "business",
 });
 
+Business.hasMany(Schedule, {
+  foreignKey: "business_id",
+  as: "schedules",
+});
+
 export default Schedule;
