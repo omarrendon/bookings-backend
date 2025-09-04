@@ -274,7 +274,7 @@ export const getAllReservationsForBusiness = async (
 enum ReservationStatus {
   PENDING = "pending",
   CONFIRMED = "confirmed",
-  CANCELED = "canceled",
+  CANCELLED = "cancelled",
   COMPLETED = "completed",
 }
 
@@ -284,7 +284,16 @@ export const updateStatus = async (
   user?: any
 ) => {
   try {
-    const reservation = await Reservation.findByPk(reservationId);
+    const emailService = new EmailService();
+    const reservation = await Reservation.findByPk(reservationId, {
+      include: [
+        {
+          model: Business,
+          as: "business",
+        },
+      ],
+    });
+    const businessReservation = reservation?.getDataValue("business");
     if (!reservation) {
       throw new Error("Reservación no existente.");
     }
@@ -304,6 +313,22 @@ export const updateStatus = async (
         id: reservationId,
       },
     });
+
+    const emailBody = {
+      to: reservation.getDataValue("customer_email"),
+      name: reservation.getDataValue("customer_name"),
+      businessName: businessReservation?.getDataValue("name"),
+      startTime: reservation.getDataValue("start_time"),
+      endTime: reservation.getDataValue("end_time"),
+      status: statusData.status,
+      products: reservation.getDataValue("products"),
+    };
+
+    if (statusData.status === ReservationStatus.CONFIRMED) {
+      await emailService.sendEmailToConfirmReservation(emailBody);
+    } else if (statusData.status === ReservationStatus.CANCELLED) {
+      await emailService.sendEmailToCancelReservation(emailBody);
+    }
 
     return updatedReservation;
   } catch (error) {

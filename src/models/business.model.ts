@@ -3,6 +3,7 @@ import { DataTypes } from "sequelize";
 import { sequelize } from "../database/sequelize";
 // Models
 import { User } from "./user.model";
+import Reservation from "./reservation.model";
 
 const Business = sequelize.define(
   "Business",

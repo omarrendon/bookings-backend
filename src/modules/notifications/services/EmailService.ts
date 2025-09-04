@@ -2,6 +2,8 @@
 import { EmailProviderFactory } from "../providers/EmailProviderFactory";
 // Templates
 import registerReservationTemplate from "../templates/BookingRegisterTemplate";
+import bookingConfirmationTemplate from "../templates/BookingConfirmationTemplate";
+import bookingCancelationTemplate from "../templates/BookingCancelationTemplate";
 
 export class EmailService {
   private provider;
@@ -13,6 +15,17 @@ export class EmailService {
   public async sendEmailToRegisterReservation(emailFieldsInformation: any) {
     const { to, ...body } = emailFieldsInformation;
     const { subject, bodyTemplate } = registerReservationTemplate(body);
+    await this.provider.sendEmail(to, subject, bodyTemplate);
+  }
+
+  public async sendEmailToConfirmReservation(emailFieldsInformation: any) {
+    const { to, ...body } = emailFieldsInformation;
+    const { subject, bodyTemplate } = bookingConfirmationTemplate(body);
+    await this.provider.sendEmail(to, subject, bodyTemplate);
+  }
+  public async sendEmailToCancelReservation(emailFieldsInformation: any) {
+    const { to, ...body } = emailFieldsInformation;
+    const { subject, bodyTemplate } = bookingCancelationTemplate(body);
     await this.provider.sendEmail(to, subject, bodyTemplate);
   }
 

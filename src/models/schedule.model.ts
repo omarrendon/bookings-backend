@@ -52,11 +52,6 @@ const Schedule = sequelize.define(
   }
 );
 
-Business.hasMany(Schedule, {
-  foreignKey: "business_id",
-  as: "schedules",
-});
-
 Schedule.belongsTo(Business, {
   foreignKey: "business_id",
   as: "business",
