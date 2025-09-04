@@ -1,17 +1,18 @@
-import { IReservationDetails } from "./BookingRegisterTemplate";
+// Interfaces
+import { IReservationDetails } from "./EmailInterface";
 
 export default function bookingConfirmationTemplate(
   reservationDetails: IReservationDetails
 ): { subject: string; bodyTemplate: string } {
-  const { date, time, name } = reservationDetails;
+  const { startTime, businessName, name } = reservationDetails;
 
   const subject = `¡Hola, ${name}! Tu reserva se ha confirmado.`;
   const bodyTemplate = `
-      <h1>Confirmación de Reserva</h1>
+      <h1>Confirmación de Reserva en ${businessName}</h1>
       <p>Gracias por reservar con nosotros. Aquí están los detalles de tu reserva:</p>
       <ul>
-        <li>Fecha: ${date}</li>
-        <li>Hora: ${time}</li>
+        <li>Fecha: ${startTime}</li>
+        <li>Hora: ${startTime}</li>
         <li>Nombre: ${name}</li>
       </ul>
     `;

@@ -1,21 +1,20 @@
-import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
+// Utils
+import {
+  getFormattedHour,
+  getFormattedLocalDate,
+} from "../../../utils/dateUtils";
+// Interfaces
+import { IReservationDetails } from "./EmailInterface";
 
-export interface IReservationDetails {
-  date: string;
-  time: string;
-  name: string;
-}
-
-export default function registerReservationTemplate(reservationDetails: any): {
+export default function registerReservationTemplate(
+  reservationDetails: IReservationDetails
+): {
   subject: string;
   bodyTemplate: string;
 } {
   const { startTime, name, businessName } = reservationDetails;
-  const reservationDate = format(parseISO(startTime), "dd 'de' MMMM", {
-    locale: es,
-  });
-  const reservationHour = format(parseISO(startTime), "HH:mm a");
+  const reservationDate = getFormattedLocalDate(startTime);
+  const reservationHour = getFormattedHour(startTime);
 
   const subject = `¡Hola, ${name}! tu reserva se ha realizado con éxito`;
   const bodyTemplate = `
