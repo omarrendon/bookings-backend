@@ -2,7 +2,6 @@
 import { IReservationDetails } from "./EmailInterface";
 // Utils
 import {
-  convertUTCDateToLocal,
   getFormattedHour,
   getFormattedLocalDate,
 } from "../../../utils/dateUtils";

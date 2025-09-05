@@ -7,6 +7,8 @@ import bookingCancelationTemplate from "../templates/BookingCancelationTemplate"
 import newReservationTemplate from "../templates/NewReservationTemplate";
 import createBusinessCountTemplate from "../templates/ValidateBusinessCountTemplate";
 import validateBusinessCountTemplate from "../templates/ValidateBusinessCountTemplate";
+import passwordResetTemplate from "../templates/PasswordResetTemplate";
+import ConfirmPasswordHasBeenUpdated from "../templates/ConfirmPassworHasBeenUpdated";
 
 export class EmailService {
   private provider;
@@ -42,6 +44,16 @@ export class EmailService {
 
   public async sendEmailToValidateBusiness(to: string, userId: string) {
     const { subject, bodyTemplate } = validateBusinessCountTemplate(userId);
+    await this.provider.sendEmail(to, subject, bodyTemplate);
+  }
+
+  public async sendEmailToResetPassword(to: string, resetLinkToken: string) {
+    const { subject, bodyTemplate } = passwordResetTemplate(resetLinkToken);
+    await this.provider.sendEmail(to, subject, bodyTemplate);
+  }
+
+  public async sendEmailToConfirmPasswordUpdate(to: string) {
+    const { subject, bodyTemplate } = ConfirmPasswordHasBeenUpdated();
     await this.provider.sendEmail(to, subject, bodyTemplate);
   }
 
