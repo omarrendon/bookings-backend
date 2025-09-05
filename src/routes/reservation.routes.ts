@@ -8,8 +8,8 @@ import {
 // Controllers
 import {
   registerReservation,
-  updateReservationStatus,
   getAllReservationsForBusiness,
+  updateReservationStatusByBusiness,
 } from "../controllers/reservation.controllers";
 import Reservation from "../models/reservation.model";
 import Business from "../models/business.model";
@@ -35,7 +35,7 @@ router.put(
       relatedOwnerField: "owner_id", // Adjust this based on your Business model's structure
     },
   }),
-  updateReservationStatus
+  updateReservationStatusByBusiness
 );
 
 export default router;

@@ -61,7 +61,10 @@ export const getAllReservationsForBusiness = async (
   }
 };
 
-export const updateReservationStatus = async (req: Request, res: Response) => {
+export const updateReservationStatusByBusiness = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const reservationId = req.params.id;
     const user = req.user;
@@ -82,6 +85,32 @@ export const updateReservationStatus = async (req: Request, res: Response) => {
     res.status(500).json({ message: `Error: ${errorMessage}`, success: false });
   }
 };
+// PENDING: Implementar la lógica para cancelar una reservación por parte del cliente
+export const cancelReservationByCustomer = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const reservationId = req.params.id;
+    const userId = req.user?.userId;
+
+    const cancelledReservation =
+      await reservationService.cancelReservationByCustomer(
+        reservationId,
+        userId
+      );
+
+    res.status(200).json({
+      message: "Reservación cancelada correctamente.",
+      data: cancelledReservation,
+      success: true,
+    });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ message: `Error: ${errorMessage}`, success: false });
+  }
+};
+
 // export const deleteReservation = async (req: Request, res: Response) => {
 //   try {
 //     const reservationId = req.params.id;

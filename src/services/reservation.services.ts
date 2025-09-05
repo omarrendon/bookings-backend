@@ -347,3 +347,29 @@ export const updateStatus = async (
     }
   }
 };
+
+// PENDING: Implementar la lógica para cancelar una reservación por parte del cliente
+export const cancelReservationByCustomer = async (
+  reservationId: string,
+  userId: string | undefined
+) => {
+  try {
+    const reservation = await Reservation.findByPk(reservationId);
+    if (!reservation) throw new Error("Reservación no encontrada.");
+
+    if (reservation.getDataValue("customer_id") !== userId) {
+      throw new Error("No tienes permisos para cancelar esta reservación.");
+    }
+
+    reservation.setDataValue("status", ReservationStatus.CANCELLED);
+    await reservation.save();
+
+    return reservation;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error al cancelar la reservación: ${error.message}`);
+    } else {
+      throw new Error("Error al cancelar la reservación: Error desconocido");
+    }
+  }
+};
