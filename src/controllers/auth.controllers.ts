@@ -1,9 +1,11 @@
+// Dependecies
 import { Request, Response } from "express";
-
+// Services
 import {
   loginUserWithEmailAndPassword,
-  registerUserWithEmailAndPassword,
+  registerBusinessWithEmailAndPassword,
 } from "../services/auth.services";
+// Schemas
 import { authSchema, registerSchema } from "../schemas/auth.schema";
 
 export async function login(req: Request, res: Response) {
@@ -42,18 +44,18 @@ export async function login(req: Request, res: Response) {
   }
 }
 
-export async function signup(req: Request, res: Response) {
+export async function signUpBusiness(req: Request, res: Response) {
   try {
     const { error, value } = registerSchema.validate(req.body);
     if (error)
       return res.status(400).json({ message: error.message, success: false });
 
-    const user = await registerUserWithEmailAndPassword(value);
-    const { id, name, email, role } = user.get({ plain: true });
+    const user = await registerBusinessWithEmailAndPassword(value);
+    const { name, email } = user.get({ plain: true });
 
     return res.status(201).json({
       message: "Usuario ha sido creado exitosamente.",
-      data: { id, name, email, role },
+      data: { name, email },
       success: true,
     });
   } catch (err) {

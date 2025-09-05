@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 
 // Utils
 import { generateToken } from "../utils/jwt";
+import { EmailService } from "../modules/notifications/services/EmailService";
 
 export async function loginUserWithEmailAndPassword(
   email: string,
@@ -36,9 +37,11 @@ interface IregisterUser {
   role: string;
 }
 
-export async function registerUserWithEmailAndPassword(
+export async function registerBusinessWithEmailAndPassword(
   registerUser: IregisterUser
 ) {
+  const emailService = new EmailService();
+
   const existingUser = await User.findOne({
     where: { email: registerUser.email },
   });
@@ -55,6 +58,11 @@ export async function registerUserWithEmailAndPassword(
     ...registerUser,
     password: hashedPassword,
   });
+
+  emailService.sendEmailToValidateBusiness(
+    registerUser.email,
+    user.getDataValue("id")
+  );
 
   return user;
 }

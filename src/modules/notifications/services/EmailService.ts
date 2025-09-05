@@ -5,6 +5,8 @@ import registerReservationTemplate from "../templates/BookingRegisterTemplate";
 import bookingConfirmationTemplate from "../templates/BookingConfirmationTemplate";
 import bookingCancelationTemplate from "../templates/BookingCancelationTemplate";
 import newReservationTemplate from "../templates/NewReservationTemplate";
+import createBusinessCountTemplate from "../templates/ValidateBusinessCountTemplate";
+import validateBusinessCountTemplate from "../templates/ValidateBusinessCountTemplate";
 
 export class EmailService {
   private provider;
@@ -36,6 +38,11 @@ export class EmailService {
     console.log("Sending email to business:", toBusiness);
     const { subject, bodyTemplate } = newReservationTemplate(body);
     await this.provider.sendEmail(toBusiness, subject, bodyTemplate);
+  }
+
+  public async sendEmailToValidateBusiness(to: string, userId: string) {
+    const { subject, bodyTemplate } = validateBusinessCountTemplate(userId);
+    await this.provider.sendEmail(to, subject, bodyTemplate);
   }
 
   async sendBussinesCreated(to: string, businessName: string) {
