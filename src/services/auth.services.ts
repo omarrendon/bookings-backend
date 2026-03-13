@@ -92,7 +92,7 @@ export const requestPasswordReset = async (email: string) => {
       expiresIn,
     });
 
-    const resetLinkToken = `/reset-password?token=${token}`;
+    const resetLinkToken = `/login/reset-password?token=${token}`;
 
     await emailService.sendEmailToResetPassword(email, resetLinkToken);
     return { message: "Se ha mandado el link para el cambio de contraseña" };
