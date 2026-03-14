@@ -1,6 +1,7 @@
 // DEPENDENCIES
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 
 // ROUTES
 import bussinessRoutes from "./routes/bussiness.routes";
@@ -14,6 +15,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(cors({ origin: process.env.CORS_ORIGIN }));
 app.use(express.json());
 
 // ROUTE FOR TEST

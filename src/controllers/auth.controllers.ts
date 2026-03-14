@@ -73,17 +73,12 @@ export async function PasswordReset(req: Request, res: Response) {
         .status(400)
         .json({ message: "Email es requerido.", success: false });
     }
-    const { message } = await requestPasswordReset(email);
-    if (!message) {
-      return res
-        .status(404)
-        .json({ message: "Token no encontrado.", success: false });
-    }
+    await requestPasswordReset(email);
     return res
       .status(200)
       .json({ message: "Correo de recuperación enviado.", success: true });
   } catch (error) {
-    return res.status(500).json({ message: `${error}.`, success: false });
+    return res.status(200).json({ message: "Correo de recuperación enviado.", success: true });
   }
 }
 
