@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 export function authenticateToken(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const authHeader = req.headers["authorization"];
   const token = authHeader?.split(" ")[1]; // Formato: Bearer TOKEN
@@ -14,14 +14,18 @@ export function authenticateToken(
   if (!token)
     return res.status(401).json({ error: "Token missing", success: false });
 
-  const secret = process.env.JWT_SECRET || "secret";
+  const secret = process.env.JWT_SECRET;
 
   try {
-    const payload = jwt.verify(token, secret);
+    const payload = jwt.verify(token, secret as string) as {
+      userId: string;
+      email: string;
+      role: string;
+    };
     (req as any).user = payload; // Adjuntamos el payload a la request
     next();
   } catch (err) {
-    return res.status(403).json({ error: "Invalid token" });
+    return res.status(403).json({ error: "Invalid token", success: false });
   }
 }
 
@@ -83,9 +87,8 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
           }
         } else if (through) {
           const relatedId = resource.getDataValue(through.relationField);
-          const relatedResource = await through.relatedModel.findByPk(
-            relatedId
-          );
+          const relatedResource =
+            await through.relatedModel.findByPk(relatedId);
           if (!relatedResource) {
             return res.status(404).json({
               message: "Recurso relacionado no encontrado.",
