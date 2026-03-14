@@ -81,7 +81,7 @@ export const requestPasswordReset = async (email: string) => {
   try {
     const emailService = new EmailService();
     const user = await User.findOne({ where: { email } });
-    if (!user) throw new Error("Usuario no encontrado.");
+    if (!user) return { message: "Correo de recuperación enviado." };
 
     const token = crypto.randomUUID();
     const expiresIn = addMinutes(new Date(), 15);
