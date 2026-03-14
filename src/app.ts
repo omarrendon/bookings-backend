@@ -1,7 +1,8 @@
 // DEPENDENCIES
-import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import { rateLimiter } from "./utils/rateLimiting";
 
 // ROUTES
 import bussinessRoutes from "./routes/bussiness.routes";
@@ -15,7 +16,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// MIDDLEWARES
 app.use(cors({ origin: process.env.CORS_ORIGIN }));
+app.use(rateLimiter(15 * 60 * 1000, 100));
 app.use(express.json());
 
 // ROUTE FOR TEST
