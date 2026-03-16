@@ -18,14 +18,13 @@ export const createBussinessSchema = Joi.object({
       Joi.object({
         platform: Joi.string().required(),
         url: Joi.string().uri().required(),
-      })
+      }),
     )
     .optional(),
   main_image_url: Joi.string().uri().optional(),
   gallery_images: Joi.array().items(Joi.string().uri()).optional(),
   is_verified: Joi.boolean().default(false),
   raiting: Joi.number().min(0).max(5).optional(),
-  owner_id: Joi.string().required(),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(() => new Date()),
 });

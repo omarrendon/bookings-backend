@@ -23,6 +23,7 @@ export const registerBusiness = async (
 
     const business = await Business.create({
       ...businessData,
+      owner_id: userId,
     });
 
     return business;
