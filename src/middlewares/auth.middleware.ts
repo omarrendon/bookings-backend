@@ -1,5 +1,5 @@
 // Dependencies
-import e, { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { Model, ModelStatic } from "sequelize";
 import jwt from "jsonwebtoken";
 

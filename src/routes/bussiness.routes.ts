@@ -18,13 +18,13 @@ router.post(
   "/",
   authenticateToken,
   authorizeRoles(["admin", "owner"]),
-  createBusiness
+  createBusiness,
 );
 router.delete(
   "/:id",
   authenticateToken,
   authorizeRoles(["admin"]),
-  deleteBusiness
+  deleteBusiness,
 );
 router.put(
   "/:id",
@@ -34,7 +34,7 @@ router.put(
     ownerField: "owner_id",
     resourceIdParam: "id",
   }),
-  updateBusiness
+  updateBusiness,
 );
 
 router.get("/", authenticateToken, authorizeRoles(["admin"]), getAllBusinesses);

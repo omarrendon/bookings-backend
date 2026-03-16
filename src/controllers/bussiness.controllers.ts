@@ -33,7 +33,6 @@ export const createBusiness = async (req: Request, res: Response) => {
 
 export const deleteBusiness = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
     const businessId = req.params.id;
 
     if (!businessId)
@@ -41,10 +40,7 @@ export const deleteBusiness = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Id de negocio es requerido.", success: false });
 
-    const { message } = await businessService.destroyBusiness(
-      businessId,
-      userId
-    );
+    const { message } = await businessService.destroyBusiness(businessId);
 
     return res.status(204).json({
       message,
@@ -71,12 +67,12 @@ export const updateBusiness = async (req: Request, res: Response) => {
 
     const updateResult = await businessService.updateBusiness(
       businessId,
-      value
+      value,
     );
 
     if (!updateResult) {
       return res.status(404).json({
-        message: "Negocio no encontrado o no autorizadomiomioomik.",
+        message: "Negocio no encontrado o no autorizado.",
         success: false,
       });
     }
@@ -105,7 +101,6 @@ export const getAllBusinesses = async (_req: Request, res: Response) => {
   }
 };
 
-// PENDING: Implement the rest of the business logic
 export const getBusinessById = async (req: Request, res: Response) => {
   try {
     if (!req.params.id) {
@@ -113,9 +108,7 @@ export const getBusinessById = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Id de negocio es requerido.", success: false });
     }
-    const { business } = await businessService.getBusinessByUserId(
-      req.params.id
-    );
+    const { business } = await businessService.getBusinessById(req.params.id);
     res.status(200).json({
       data: business,
       message: "Negocio obtenido exitosamente.",
