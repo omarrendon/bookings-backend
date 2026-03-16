@@ -5,7 +5,7 @@ import Product from "../models/product.model";
 import Reservation from "../models/reservation.model";
 import ReservationProduct from "../models/reservationProduct.model";
 // Services
-import { getBusinessByUserId } from "./bussines.services";
+import { getBusinessByUserId } from "./business.services";
 // Utils
 import {
   addMinutesToDate,

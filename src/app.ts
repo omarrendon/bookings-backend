@@ -5,7 +5,7 @@ import express from "express";
 import { rateLimiter } from "./utils/rateLimiting";
 
 // ROUTES
-import bussinessRoutes from "./routes/bussiness.routes";
+import businessRoutes from "./routes/business.routes";
 import authRoutes from "./routes/auth.routes";
 import categoriesRoutes from "./routes/category.routes";
 import productRoutes from "./routes/product.routes";
@@ -28,7 +28,7 @@ app.get("/", (_req, res) => {
 
 // ROUTES
 app.use("/api/auth", authRoutes);
-app.use("/api/business", bussinessRoutes);
+app.use("/api/business", businessRoutes);
 app.use("/api/category", categoriesRoutes);
 app.use("/api/product", productRoutes);
 app.use("/api/reservation", reservationRoutes);
