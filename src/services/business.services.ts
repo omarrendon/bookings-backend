@@ -6,7 +6,7 @@ import { IBusinessBody } from "../interfaces/businessInterface";
 
 export const registerBusiness = async (
   businessData: IBusinessBody,
-  userId: string | undefined
+  userId: string | undefined,
 ) => {
   try {
     const existingBusiness = await Business.findOne({
@@ -17,12 +17,13 @@ export const registerBusiness = async (
 
     if (existingBusiness) {
       throw new Error(
-        "Ya tienes un negocio registrado. Solo se permite uno por usuario."
+        "Ya tienes un negocio registrado. Solo se permite uno por usuario.",
       );
     }
 
     const business = await Business.create({
       ...businessData,
+      owner_id: userId,
     });
 
     return business;
@@ -35,10 +36,7 @@ export const registerBusiness = async (
   }
 };
 
-export const destroyBusiness = async (
-  businessId: string,
-  userId: string | undefined
-) => {
+export const destroyBusiness = async (businessId: string) => {
   try {
     const business = await Business.findOne({
       where: { id: businessId },
@@ -56,7 +54,7 @@ export const destroyBusiness = async (
 
 export const updateBusiness = async (
   businessId: string,
-  businessData: Partial<IBusinessBody>
+  businessData: Partial<IBusinessBody>,
 ) => {
   try {
     const business = await Business.findOne({
@@ -84,23 +82,18 @@ export const getAllBusinesses = async () => {
   return { businesses };
 };
 
-export const getBusinessByUserId = async (userId: string | undefined) => {
+export const getBusinessById = async (businessId: string) => {
   try {
-    if (!userId) {
-      throw new Error(
-        "El ID de usuario es requerido para obtener la información del negocio."
-      );
-    }
-
-    const business = await Business.findOne({
-      where: { owner_id: userId },
+    const business = await Business.findByPk(businessId, {
       include: [
         { model: User, as: "owner", attributes: ["id", "name", "email"] },
       ],
     });
-    // if (!business) {
-    //   throw new Error("Negocio no encontrado para el usuario proporcionado.");
-    // }
+
+    if (!business) {
+      throw new Error("Negocio no encontrado.");
+    }
+
     return { business };
   } catch (error) {
     throw new Error(`Error al obtener negocio: ${error}`);

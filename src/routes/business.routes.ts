@@ -5,11 +5,13 @@ import {
   getAllBusinesses,
   getBusinessById,
   updateBusiness,
-} from "../controllers/bussiness.controllers";
+} from "../controllers/business.controllers";
 import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware";
+import { validateBody } from "../middlewares/validate";
+import { createBusinessSchema, updateBusinessSchema } from "../schemas/business.schema";
 import Business from "../models/business.model";
 
 const router = Router();
@@ -18,13 +20,14 @@ router.post(
   "/",
   authenticateToken,
   authorizeRoles(["admin", "owner"]),
-  createBusiness
+  validateBody(createBusinessSchema),
+  createBusiness,
 );
 router.delete(
   "/:id",
   authenticateToken,
   authorizeRoles(["admin"]),
-  deleteBusiness
+  deleteBusiness,
 );
 router.put(
   "/:id",
@@ -34,7 +37,8 @@ router.put(
     ownerField: "owner_id",
     resourceIdParam: "id",
   }),
-  updateBusiness
+  validateBody(updateBusinessSchema),
+  updateBusiness,
 );
 
 router.get("/", authenticateToken, authorizeRoles(["admin"]), getAllBusinesses);
