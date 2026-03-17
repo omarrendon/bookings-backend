@@ -5,6 +5,8 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware";
+import { validateBody } from "../middlewares/validate";
+import { createProductSchema, updateProductSchema } from "../schemas/product.schema";
 // Controllers
 import {
   createProduct,
@@ -20,10 +22,15 @@ const route = Router();
 route.post(
   "/",
   authenticateToken,
-  authorizeRoles(["admin", "owner"]),
-  createProduct
+  authorizeRoles(["admin", "owner"], {
+    model: Business,
+    ownerField: "owner_id",
+    resourceIdParam: "business_id",
+  }),
+  validateBody(createProductSchema),
+  createProduct,
 );
-route.get("/:id", getProducts);
+route.get("/:businessId", getProducts);
 route.put(
   "/:id",
   authenticateToken,
@@ -36,21 +43,22 @@ route.put(
       relatedOwnerField: "owner_id", // Adjust this based on your Business model's structure
     },
   }),
-  updateProduct
+  validateBody(updateProductSchema),
+  updateProduct,
 );
 route.delete(
   "/:id",
   authenticateToken,
-  deleteProduct,
   authorizeRoles(["admin", "owner"], {
-    model: Product, // Assuming you have a Product model defined
+    model: Product,
     resourceIdParam: "id",
     through: {
-      relationField: "business_id", // Assuming this is the field in Product that relates to Business
-      relatedModel: Business, // Assuming you have a Business model defined
-      relatedOwnerField: "owner_id", // Adjust this based on your Business model's structure
+      relationField: "business_id",
+      relatedModel: Business,
+      relatedOwnerField: "owner_id",
     },
-  })
+  }),
+  deleteProduct,
 );
 
 export default route;

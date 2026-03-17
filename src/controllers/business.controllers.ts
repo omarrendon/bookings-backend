@@ -1,26 +1,11 @@
 import { Request, Response } from "express";
 
-import * as businessService from "../services/bussines.services";
-import { createBussinessSchema } from "../schemas/business.schema";
-import { getRoleByuser } from "../services/auth.services";
+import * as businessService from "../services/business.services";
 
 export const createBusiness = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
-    const { error, value } = createBussinessSchema.validate(req.body);
-    if (error)
-      return res.status(400).json({ message: error.message, success: false });
-
-    const userRole = await getRoleByuser(userId as string);
-
-    if (userRole !== "admin" && userRole !== "owner") {
-      return res.status(403).json({
-        message: "No tienes permisos para crear un negocio.",
-        success: false,
-      });
-    }
-
-    const business = await businessService.registerBusiness(value, userId);
+    const business = await businessService.registerBusiness(req.body, userId);
     res.status(201).json({
       data: business,
       message: "Negocio creado exitosamente.",
@@ -33,7 +18,6 @@ export const createBusiness = async (req: Request, res: Response) => {
 
 export const deleteBusiness = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
     const businessId = req.params.id;
 
     if (!businessId)
@@ -41,12 +25,9 @@ export const deleteBusiness = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Id de negocio es requerido.", success: false });
 
-    const { message } = await businessService.destroyBusiness(
-      businessId,
-      userId
-    );
+    const { message } = await businessService.destroyBusiness(businessId);
 
-    return res.status(204).json({
+    return res.status(200).json({
       message,
       success: true,
     });
@@ -58,25 +39,20 @@ export const deleteBusiness = async (req: Request, res: Response) => {
 export const updateBusiness = async (req: Request, res: Response) => {
   try {
     const businessId = req.params.id;
-    const businessData = req.body;
 
     if (!businessId)
       return res
         .status(400)
         .json({ message: "Id de negocio es requerido.", success: false });
 
-    const { error, value } = createBussinessSchema.validate(businessData);
-    if (error)
-      return res.status(400).json({ message: error.message, success: false });
-
     const updateResult = await businessService.updateBusiness(
       businessId,
-      value
+      req.body,
     );
 
     if (!updateResult) {
       return res.status(404).json({
-        message: "Negocio no encontrado o no autorizadomiomioomik.",
+        message: "Negocio no encontrado o no autorizado.",
         success: false,
       });
     }
@@ -105,7 +81,6 @@ export const getAllBusinesses = async (_req: Request, res: Response) => {
   }
 };
 
-// PENDING: Implement the rest of the business logic
 export const getBusinessById = async (req: Request, res: Response) => {
   try {
     if (!req.params.id) {
@@ -113,9 +88,7 @@ export const getBusinessById = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Id de negocio es requerido.", success: false });
     }
-    const { business } = await businessService.getBusinessByUserId(
-      req.params.id
-    );
+    const { business } = await businessService.getBusinessById(req.params.id);
     res.status(200).json({
       data: business,
       message: "Negocio obtenido exitosamente.",

@@ -22,7 +22,7 @@ export async function login(req: Request, res: Response) {
     const { email, password } = req.body;
     const { user, token } = await loginUserWithEmailAndPassword(
       email,
-      password
+      password,
     );
 
     return res.json({
@@ -78,7 +78,9 @@ export async function PasswordReset(req: Request, res: Response) {
       .status(200)
       .json({ message: "Correo de recuperación enviado.", success: true });
   } catch (error) {
-    return res.status(200).json({ message: "Correo de recuperación enviado.", success: true });
+    return res
+      .status(200)
+      .json({ message: "Correo de recuperación enviado.", success: true });
   }
 }
 
@@ -86,12 +88,10 @@ export const passwordUpdated = async (req: Request, res: Response) => {
   try {
     const { token, newPassword } = req.body;
     if (!token || !newPassword) {
-      return res
-        .status(400)
-        .json({
-          message: "Token y nueva contraseña son requeridos.",
-          success: false,
-        });
+      return res.status(400).json({
+        message: "Token y nueva contraseña son requeridos.",
+        success: false,
+      });
     }
 
     const { message } = await resetPassword(token, newPassword);
