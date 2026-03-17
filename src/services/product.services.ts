@@ -1,23 +1,13 @@
 //Models
 import Product from "../models/product.model";
-import Business from "../models/business.model";
 //Interfaces
 import { IProduct } from "../interfaces/product.interfaces";
 
-export const saveProduct = async (
-  product: IProduct,
-  userId: string | undefined
-) => {
+export const saveProduct = async (product: IProduct) => {
   try {
-    // const bussinessOwner = await Business.findOne({
-    //   where: { id: product.business_id, owner_id: userId },
-    // });
-    // if (!bussinessOwner) {
-    //   throw new Error("Negocio no encontrado o no autorizado");
-    // }
-
     const newProduct = await Product.create({
       ...product,
+      business_id: product.business_id,
     });
     return { newProduct };
   } catch (error) {
@@ -36,10 +26,7 @@ export const getAllProducts = async (id: string) => {
   }
 };
 
-export const destroyProduct = async (
-  productId: string,
-  userId: string | undefined
-) => {
+export const destroyProduct = async (productId: string) => {
   try {
     const product = await Product.findOne({
       where: { id: productId },
@@ -57,19 +44,11 @@ export const destroyProduct = async (
 
 export const updateExistentProduct = async (
   productId: string,
-  userId: string | undefined,
-  productData: IProduct
+  productData: IProduct,
 ) => {
   try {
-    const bussinessOwner = await Business.findOne({
-      where: { id: productData.business_id, owner_id: userId },
-    });
-    if (!bussinessOwner) {
-      throw new Error("Negocio no encontrado o no autorizado");
-    }
-
     const product = await Product.findOne({
-      where: { id: productId, business_id: productData.business_id },
+      where: { id: productId },
     });
 
     if (!product) {
