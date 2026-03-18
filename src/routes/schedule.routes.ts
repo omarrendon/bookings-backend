@@ -10,6 +10,12 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware";
+import { validateBody } from "../middlewares/validate";
+// SCHEMAS
+import {
+  createScheduleSchema,
+  updateScheduleSchema,
+} from "../schemas/schedule.schema";
 // MODELS
 import Schedule from "../models/schedule.model";
 import Business from "../models/business.model";
@@ -17,12 +23,19 @@ import Business from "../models/business.model";
 const router = Router();
 
 router.get("/:business_id/slots/month", getSchedulesByBusiness);
+
 router.post(
   "/",
   authenticateToken,
-  authorizeRoles(["admin", "owner"]),
-  createSchedule
+  authorizeRoles(["admin", "owner"], {
+    model: Business,
+    ownerField: "owner_id",
+    resourceIdParam: "business_id",
+  }),
+  validateBody(createScheduleSchema),
+  createSchedule,
 );
+
 router.put(
   "/:id",
   authenticateToken,
@@ -35,7 +48,8 @@ router.put(
       relationField: "business_id",
     },
   }),
-  updateSchedule
+  validateBody(updateScheduleSchema),
+  updateSchedule,
 );
 
 export default router;

@@ -1,8 +1,5 @@
-// Models
+// Dependencies
 import { Op } from "sequelize";
-import Business from "../models/business.model";
-import Reservation from "../models/reservation.model";
-import Schedule from "../models/schedule.model";
 import {
   addHours,
   eachDayOfInterval,
@@ -12,32 +9,38 @@ import {
   parseISO,
   startOfMonth,
 } from "date-fns";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+// Models
+import Reservation from "../models/reservation.model";
+import Schedule from "../models/schedule.model";
+// Database
+import { sequelize } from "../database/sequelize";
+// Utils
+import { AppError } from "../utils/AppError";
 
-interface ScheduleData {
-  business_id: string;
-  hours: {
-    day: string;
-    open_time: string | null;
-    close_time: string | null;
-  }[];
+const TIME_ZONE = process.env.TIMEZONE || "America/Mexico_City";
+
+interface HourEntry {
+  day: string;
+  open_time: string | null;
+  close_time: string | null;
 }
 
-export const createSchedule = async (scheduleData: ScheduleData) => {
+export const createSchedule = async (scheduleData: {
+  business_id: string;
+  hours: HourEntry[];
+}) => {
   try {
     const { business_id, hours } = scheduleData;
-    const createSchedule = await Schedule.bulkCreate(
+    const newSchedule = await Schedule.bulkCreate(
       hours.map(hour => ({
         day: hour.day,
         open_time: hour.open_time,
         close_time: hour.close_time,
-        business_id: business_id,
-      }))
+        business_id,
+      })),
     );
-
-    if (!createSchedule) {
-      throw new Error("Se produjo un error al crear el horario.");
-    }
-    return { newSchedule: createSchedule };
+    return { newSchedule };
   } catch (error) {
     throw new Error("Error al crear el horario: " + error);
   }
@@ -45,23 +48,28 @@ export const createSchedule = async (scheduleData: ScheduleData) => {
 
 export const getSchedulesByBusiness = async (
   businessId: string,
-  date: string
+  date: string,
 ) => {
   try {
     const startMonth = parseISO(date);
-    const endMonth = endOfMonth(startMonth);
+    const startOfMonthDate = startOfMonth(startMonth);
+    const endOfMonthDate = endOfMonth(startMonth);
 
     const schedules = await Schedule.findAll({
       where: { business_id: businessId },
     });
-    if (!schedules) return { month: startMonth, slots: [] };
 
+    if (schedules.length === 0) return { month: startMonth, slots: [] };
+
+    // Incluir reservaciones que solapen con el mes completo, no solo las que empiezan en él
     const reservations = await Reservation.findAll({
       where: {
         business_id: businessId,
-        start_time: {
-          [Op.between]: [startOfMonth(startMonth), endMonth],
-        },
+        status: ["pending", "confirmed"],
+        [Op.and]: [
+          { start_time: { [Op.lt]: endOfMonthDate } },
+          { end_time: { [Op.gt]: startOfMonthDate } },
+        ],
       },
     });
 
@@ -69,60 +77,66 @@ export const getSchedulesByBusiness = async (
       start_time: reservation.get("start_time") as Date,
       end_time: reservation.get("end_time") as Date,
     }));
+
     const days: {
       date: string;
       slots: { start: string; end: string; isBooked: boolean }[];
     }[] = [];
-    const daysInMonth = eachDayOfInterval({ start: startMonth, end: endMonth });
+
+    const daysInMonth = eachDayOfInterval({
+      start: startOfMonthDate,
+      end: endOfMonthDate,
+    });
 
     for (const day of daysInMonth) {
-      const dayOfWeek = day.getDay(); // 0 (Domingo) a 6 (Sábado)
-      const mappedDay = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ];
-      const dayName = mappedDay[dayOfWeek];
+      // Usar la zona horaria del negocio para determinar el día de la semana correctamente
+      const dayName = formatInTimeZone(day, TIME_ZONE, "EEEE");
 
-      // Horarios aplicables a ese día
       const daySchedules = schedules.filter(
-        schedule => schedule.getDataValue("day") === dayName
+        schedule => schedule.getDataValue("day") === dayName,
       );
+
       if (!daySchedules.length) {
         days.push({ date: format(day, "yyyy-MM-dd"), slots: [] });
         continue;
       }
 
       const slots: { start: string; end: string; isBooked: boolean }[] = [];
+      const dateStr = formatInTimeZone(day, TIME_ZONE, "yyyy-MM-dd");
+
       for (const schedule of daySchedules) {
-        let currentOpenTime = new Date(
-          `${format(day, "yyyy-MM-dd")}T${schedule.getDataValue("open_time")}`
+        const openTime = schedule.getDataValue("open_time");
+        const closeTime = schedule.getDataValue("close_time");
+        if (!openTime || !closeTime) continue;
+
+        // Construir fechas en la zona horaria del negocio, no del servidor
+        let currentOpenTime = fromZonedTime(
+          `${dateStr}T${openTime}`,
+          TIME_ZONE,
         );
-        const currentCloseTime = new Date(
-          `${format(day, "yyyy-MM-dd")}T${schedule.getDataValue("close_time")}`
+        const currentCloseTime = fromZonedTime(
+          `${dateStr}T${closeTime}`,
+          TIME_ZONE,
         );
 
-        // Verificar si este intervalo está ocupado
         while (isBefore(currentOpenTime, currentCloseTime)) {
           const nextHour = addHours(currentOpenTime, 1);
+
+          // Overlap correcto: cubre también el caso donde la reserva engloba el slot completamente
           const isOccupied = reservationsRanges.some(
             range =>
-              (currentOpenTime >= range.start_time &&
-                currentOpenTime < range.end_time) ||
-              (nextHour > range.start_time && nextHour <= range.end_time)
+              currentOpenTime < range.end_time && nextHour > range.start_time,
           );
+
           slots.push({
-            start: format(currentOpenTime, "HH:mm"),
-            end: format(nextHour, "HH:mm"),
+            start: formatInTimeZone(currentOpenTime, TIME_ZONE, "HH:mm"),
+            end: formatInTimeZone(nextHour, TIME_ZONE, "HH:mm"),
             isBooked: isOccupied,
           });
           currentOpenTime = nextHour;
         }
       }
+
       days.push({ date: format(day, "yyyy-MM-dd"), slots });
     }
 
@@ -132,30 +146,38 @@ export const getSchedulesByBusiness = async (
   }
 };
 
-export const updateSchedule = async (scheduleData: ScheduleData) => {
+export const updateSchedule = async (
+  scheduleId: string,
+  hours: HourEntry[],
+) => {
+  const t = await sequelize.transaction();
   try {
-    const { hours } = scheduleData;
+    // Obtener business_id del registro existente — no confiar en el body
+    const existing = await Schedule.findByPk(scheduleId, { transaction: t });
+    if (!existing) throw new AppError("Horario no encontrado.", 404);
 
-    // Elimina los horarios existentes para el negocio
+    const business_id = existing.getDataValue("business_id");
+
     await Schedule.destroy({
-      where: { business_id: scheduleData.business_id },
+      where: { business_id },
+      transaction: t,
     });
 
-    // Inserta todos los nuevos registros recibidos en la petición
     const updatedHoursResults = await Schedule.bulkCreate(
       hours.map(hour => ({
         day: hour.day,
         open_time: hour.open_time,
         close_time: hour.close_time,
-        business_id: scheduleData.business_id,
-      }))
+        business_id,
+      })),
+      { transaction: t },
     );
 
-    if (!updatedHoursResults) {
-      throw new Error("No se pudo actualizar el horario del negocio.");
-    }
+    await t.commit();
     return { updatedSchedule: updatedHoursResults };
   } catch (error) {
+    await t.rollback();
+    if (error instanceof AppError) throw error;
     throw new Error("Error al actualizar el horario: " + error);
   }
 };
