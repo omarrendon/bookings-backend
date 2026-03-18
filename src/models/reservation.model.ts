@@ -3,10 +3,10 @@ import { DataTypes } from "sequelize";
 // Database
 import { sequelize } from "../database/sequelize";
 // Models
-import ReservationProduct from "./reservationProduct.model";
-import Business from "./business.model";
 import { User } from "./user.model";
 import Product from "./product.model";
+import Business from "./business.model";
+import ReservationProduct from "./reservationProduct.model";
 
 const Reservation = sequelize.define(
   "Reservation",
@@ -43,7 +43,7 @@ const Reservation = sequelize.define(
         "no_show",
         "checked_in",
         "checked_out",
-        "waiting_for_confirmation"
+        "waiting_for_confirmation",
       ),
       allowNull: false,
       defaultValue: "pending",
@@ -72,11 +72,11 @@ const Reservation = sequelize.define(
       allowNull: true,
     },
     start_time: {
-      type: DataTypes.TIME,
+      type: DataTypes.DATE,
       allowNull: false,
     },
     end_time: {
-      type: DataTypes.TIME,
+      type: DataTypes.DATE,
       allowNull: false,
     },
     created_at: {
@@ -98,7 +98,7 @@ const Reservation = sequelize.define(
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
-  }
+  },
 );
 
 Reservation.belongsTo(Business, {
