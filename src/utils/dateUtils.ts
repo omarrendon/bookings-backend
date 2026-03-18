@@ -8,9 +8,11 @@ import { es } from "date-fns/locale";
   //   tz zona horaria (ej: "America/Mexico_City")
    */
 
+const TIME_ZONE = process.env.TIMEZONE || "America/Mexico_City";
+
 export const convertDateToUTC = (
   date: string | Date,
-  tz: string = "America/Mexico_City"
+  tz: string = TIME_ZONE,
 ): Date => {
   const zonedDate = fromZonedTime(date, tz);
   return zonedDate;
@@ -18,7 +20,7 @@ export const convertDateToUTC = (
 
 export const convertUTCDateToLocal = (
   date: string | Date,
-  tz: string = "America/Mexico_City"
+  tz: string = TIME_ZONE,
 ) => {
   return formatInTimeZone(date, tz, "yyyy-MM-dd'T'HH:mm:ss");
 };

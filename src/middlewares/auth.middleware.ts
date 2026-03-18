@@ -22,7 +22,7 @@ export function authenticateToken(
       email: string;
       role: string;
     };
-    (req as any).user = payload; // Adjuntamos el payload a la request
+    req.user = payload; // Adjuntamos el payload a la request
     next();
   } catch (err) {
     return res.status(403).json({ error: "Invalid token", success: false });
