@@ -12,7 +12,9 @@
     "migrate": "ts-node src/database/utils/run-migrations.ts",
     "rollback:migrate": "ts-node src/database/utils/rollback-migrations.ts",
     "seed": "ts-node src/database/utils/run-seeders.ts",
-    "rollback:seed": "ts-node src/database/utils/rollback-seeders.ts"
+    "rollback:seed": "ts-node src/database/utils/rollback-seeders.ts",
+    "db:reset": "ts-node src/database/utils/reset-db.ts",
+    "db:fresh": "npm run db:reset && npm run seed"
   },
   "keywords": [],
   "author": "",
