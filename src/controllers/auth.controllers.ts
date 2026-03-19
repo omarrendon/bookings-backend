@@ -6,6 +6,8 @@ import {
   registerBusinessWithEmailAndPassword,
   requestPasswordReset,
   resetPassword,
+  refreshAccessToken,
+  revokeRefreshToken,
 } from "../services/auth.services";
 // Schemas
 import { authSchema, registerSchema } from "../schemas/auth.schema";
@@ -14,16 +16,23 @@ export async function login(req: Request, res: Response) {
   const { error } = authSchema.validate(req.body);
   if (error) {
     return res.status(400).json({
-      messageq: error.message,
+      message: error.message,
       success: false,
     });
   }
   try {
     const { email, password } = req.body;
-    const { user, token } = await loginUserWithEmailAndPassword(
+    const { user, token, refreshToken } = await loginUserWithEmailAndPassword(
       email,
       password,
     );
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días en ms
+    });
 
     return res.json({
       message: "Usuario ha iniciado sesión exitosamente.",
@@ -61,7 +70,9 @@ export async function signUpBusiness(req: Request, res: Response) {
       success: true,
     });
   } catch (err) {
-    return res.status(500).json({ message: `${err}.`, success: false });
+    const message = err instanceof Error ? err.message : "Error desconocido";
+    console.error("[signUpBusiness]", err);
+    return res.status(500).json({ message, success: false });
   }
 }
 
@@ -103,6 +114,43 @@ export const passwordUpdated = async (req: Request, res: Response) => {
     return res
       .status(200)
       .json({ message: "Contraseña actualizada exitosamente.", success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    console.error("[passwordUpdated]", error);
+    return res.status(500).json({ message, success: false });
+  }
+};
+
+export const refresh = async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      return res
+        .status(401)
+        .json({ message: "Refresh token requerido.", success: false });
+    }
+
+    const { token } = await refreshAccessToken(refreshToken);
+    return res.json({ data: { token }, success: true });
+  } catch (error) {
+    return res
+      .status(401)
+      .json({ message: `${error}`, success: false });
+  }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      return res
+        .status(400)
+        .json({ message: "Refresh token requerido.", success: false });
+    }
+
+    await revokeRefreshToken(refreshToken);
+    res.clearCookie("refreshToken");
+    return res.json({ message: "Sesión cerrada exitosamente.", success: true });
   } catch (error) {
     return res.status(500).json({ message: `${error}.`, success: false });
   }

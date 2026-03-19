@@ -2,7 +2,7 @@
 import { Request, Response } from "express";
 
 // Services
-import { saveCategory } from "../services/catogory.services";
+import { saveCategory } from "../services/category.services";
 
 // Schemas
 import { categorySchema } from "../schemas/category.schema";
@@ -23,6 +23,8 @@ export async function createCategory(req: Request, res: Response) {
       success: true,
     });
   } catch (error) {
-    return res.status(500).json({ message: `${error}.`, success: false });
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    console.error("[createCategory]", error);
+    return res.status(500).json({ message, success: false });
   }
 }

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import * as businessService from "../services/business.services";
+import { AppError } from "../utils/AppError";
 
 export const createBusiness = async (req: Request, res: Response) => {
   try {
@@ -12,7 +13,10 @@ export const createBusiness = async (req: Request, res: Response) => {
       success: true,
     });
   } catch (err) {
-    return res.status(400).json({ message: `${err}.`, success: false });
+    const statusCode = err instanceof AppError ? err.statusCode : 400;
+    const message = err instanceof Error ? err.message : "Error desconocido";
+    console.error("[createBusiness]", err);
+    return res.status(statusCode).json({ message, success: false });
   }
 };
 
@@ -27,12 +31,12 @@ export const deleteBusiness = async (req: Request, res: Response) => {
 
     const { message } = await businessService.destroyBusiness(businessId);
 
-    return res.status(200).json({
-      message,
-      success: true,
-    });
+    return res.status(200).json({ message, success: true });
   } catch (err) {
-    return res.status(400).json({ message: `${err}.`, success: false });
+    const statusCode = err instanceof AppError ? err.statusCode : 500;
+    const message = err instanceof Error ? err.message : "Error desconocido";
+    console.error("[deleteBusiness]", err);
+    return res.status(statusCode).json({ message, success: false });
   }
 };
 
@@ -62,7 +66,10 @@ export const updateBusiness = async (req: Request, res: Response) => {
       success: true,
     });
   } catch (err) {
-    return res.status(500).json({ message: `${err}.`, success: false });
+    const statusCode = err instanceof AppError ? err.statusCode : 500;
+    const message = err instanceof Error ? err.message : "Error desconocido";
+    console.error("[updateBusiness]", err);
+    return res.status(statusCode).json({ message, success: false });
   }
 };
 
@@ -75,9 +82,9 @@ export const getAllBusinesses = async (_req: Request, res: Response) => {
       success: true,
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error fetching businesses", success: false });
+    const message = err instanceof Error ? err.message : "Error desconocido";
+    console.error("[getAllBusinesses]", err);
+    res.status(500).json({ message, success: false });
   }
 };
 
@@ -95,8 +102,8 @@ export const getBusinessById = async (req: Request, res: Response) => {
       success: true,
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error fetching business", success: false });
+    const message = err instanceof Error ? err.message : "Error desconocido";
+    console.error("[getBusinessById]", err);
+    res.status(500).json({ message, success: false });
   }
 };
