@@ -17,14 +17,19 @@ module.exports = {
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
+    // Eliminar filas con nulos antes de aplicar NOT NULL para evitar violacion de constraint
+    await queryInterface.sequelize.query(
+      `DELETE FROM "schedules" WHERE "open_time" IS NULL OR "close_time" IS NULL`,
+    );
+
     await queryInterface.changeColumn("schedules", "open_time", {
       type: DataTypes.TIME,
-      allowNull: false, // ❌ vuelve a no permitir valores nulos
+      allowNull: false,
     });
 
     await queryInterface.changeColumn("schedules", "close_time", {
       type: DataTypes.TIME,
-      allowNull: false, // ❌ vuelve a no permitir valores nulos
+      allowNull: false,
     });
   },
 };

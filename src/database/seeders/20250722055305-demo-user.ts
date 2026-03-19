@@ -14,14 +14,6 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       updated_at: new Date(),
     },
     {
-      email: "user@example.com",
-      password: hashedPassword,
-      role: "user",
-      name: "Regular User",
-      created_at: new Date(),
-      updated_at: new Date(),
-    },
-    {
       email: "owner@example.com",
       password: hashedPassword,
       role: "owner",
@@ -33,5 +25,9 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
 }
 
 export async function down(queryInterface: QueryInterface): Promise<void> {
-  await queryInterface.bulkDelete("users", { email: "admin@example.com" }, {});
+  await queryInterface.bulkDelete(
+    "users",
+    { email: ["admin@example.com", "owner@example.com"] },
+    {},
+  );
 }
