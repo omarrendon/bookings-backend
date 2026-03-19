@@ -4,5 +4,5 @@ export interface IReservationDetails {
   name: string;
   status?: string;
   endTime?: string;
-  products?: string[] | undefined;
+  products?: object[];
 }

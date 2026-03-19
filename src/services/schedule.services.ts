@@ -17,6 +17,7 @@ import Schedule from "../models/schedule.model";
 import { sequelize } from "../database/sequelize";
 // Utils
 import { AppError } from "../utils/AppError";
+import { scheduleCache } from "../utils/scheduleCache";
 
 const TIME_ZONE = process.env.TIMEZONE || "America/Mexico_City";
 
@@ -52,6 +53,10 @@ export const getSchedulesByBusiness = async (
 ) => {
   try {
     const startMonth = parseISO(date);
+    const cacheKey = `${businessId}:${format(startMonth, "yyyy-MM")}`;
+    const cached = scheduleCache.get(cacheKey);
+    if (cached) return cached;
+
     const startOfMonthDate = startOfMonth(startMonth);
     const endOfMonthDate = endOfMonth(startMonth);
 
@@ -140,7 +145,9 @@ export const getSchedulesByBusiness = async (
       days.push({ date: format(day, "yyyy-MM-dd"), slots });
     }
 
-    return { month: startMonth, slots: days };
+    const result = { month: startMonth, slots: days };
+    scheduleCache.set(cacheKey, result);
+    return result;
   } catch (error) {
     throw new Error("Error al obtener horarios: " + error);
   }
@@ -174,6 +181,7 @@ export const updateSchedule = async (
     );
 
     await t.commit();
+    scheduleCache.invalidate(`${business_id}:`);
     return { updatedSchedule: updatedHoursResults };
   } catch (error) {
     await t.rollback();

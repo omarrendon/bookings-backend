@@ -1,5 +1,5 @@
 // Dependencies
-import { Op } from "sequelize";
+import { Op, Transaction } from "sequelize";
 import { formatInTimeZone } from "date-fns-tz";
 // Models
 import Product from "../models/product.model";
@@ -19,6 +19,7 @@ import {
   convertUTCDateToLocal,
 } from "../utils/dateUtils";
 import { AppError } from "../utils/AppError";
+import { scheduleCache } from "../utils/scheduleCache";
 // Interfaces
 import {
   IScheduleDay,
@@ -81,7 +82,10 @@ export const validateBusinessProducts = async (
 };
 
 export const createReservation = async (reservationData: IReservationData) => {
-  const t = await sequelize.transaction();
+  const t = await sequelize.transaction({
+    isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+  });
+
   try {
     const emailService = new EmailService();
     const { business_id, products, ...data } = reservationData;
@@ -190,7 +194,7 @@ export const createReservation = async (reservationData: IReservationData) => {
     const overLappingReservations = await Reservation.findOne({
       where: {
         business_id,
-        status: ["pending", "confirmed"],
+        status: { [Op.in]: ["pending", "confirmed"] },
         [Op.and]: [
           { start_time: { [Op.lt]: endDate } },
           { end_time: { [Op.gt]: startDate } },
@@ -245,8 +249,21 @@ export const createReservation = async (reservationData: IReservationData) => {
       endTime: reservation.getDataValue("end_time"),
       products: productsFounded,
     };
-    await emailService.sendEmailToRegisterReservation(emailFieldsInformation);
-    await emailService.sendEmailToNewReservation(emailFieldsInformation);
+
+    // Invalidar cache de slots para este negocio
+    scheduleCache.invalidate(`${business_id}:`);
+
+    // Enviar emails en paralelo sin bloquear la respuesta ni afectar la transaccion
+    Promise.allSettled([
+      emailService.sendEmailToRegisterReservation(emailFieldsInformation),
+      emailService.sendEmailToNewReservation(emailFieldsInformation),
+    ]).then((results) => {
+      results.forEach((result) => {
+        if (result.status === "rejected") {
+          console.error("[EMAIL ERROR] Error al enviar email de reservacion:", result.reason);
+        }
+      });
+    });
 
     return { reservation, products: response };
   } catch (error) {
@@ -297,7 +314,7 @@ enum ReservationStatus {
 export const updateStatus = async (
   reservationId: string,
   statusData: { status: ReservationStatus },
-  user?: any,
+  user?: { userId: string; email: string; role: string },
 ) => {
   try {
     const emailService = new EmailService();
@@ -320,15 +337,11 @@ export const updateStatus = async (
 
     const modifyStatus = {
       status: statusData.status,
-      updated_by: JSON.stringify(user?.userId),
+      updated_by: user?.userId ?? null,
       updated_at: new Date(),
     };
 
-    const updatedReservation = await reservation.update(modifyStatus, {
-      where: {
-        id: reservationId,
-      },
-    });
+    const updatedReservation = await reservation.update(modifyStatus);
 
     const emailBody = {
       to: reservation.getDataValue("customer_email"),
