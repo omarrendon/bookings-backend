@@ -21,12 +21,21 @@ dotenv.config();
 
 // VALIDACION DE VARIABLES DE ENTORNO REQUERIDAS
 const REQUIRED_ENV_VARS = [
-  "DB_USER", "DB_NAME", "DB_PASSWORD", "DB_HOST", "DB_PORT",
-  "JWT_SECRET", "RESEND_API_KEY", "EMAIL_FROM", "CORS_ORIGIN",
+  "DB_USER",
+  "DB_NAME",
+  "DB_PASSWORD",
+  "DB_HOST",
+  "DB_PORT",
+  "JWT_SECRET",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
+  "CORS_ORIGIN",
 ];
-const missingVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
+const missingVars = REQUIRED_ENV_VARS.filter(key => !process.env[key]);
 if (missingVars.length > 0) {
-  console.error(`[STARTUP ERROR] Variables de entorno faltantes: ${missingVars.join(", ")}`);
+  console.error(
+    `[STARTUP ERROR] Variables de entorno faltantes: ${missingVars.join(", ")}`,
+  );
   process.exit(1);
 }
 
@@ -39,13 +48,13 @@ app.use(cookieParser());
 app.use(rateLimiter(15 * 60 * 1000, 100));
 app.use(express.json());
 
-// ROUTE FOR TEST
-app.get("/", (_req, res) => {
-  res.send("API WORKING ✅");
-});
-
 // DOCS
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// ROUTE FOR TEST
+app.get("/api", (_req, res) => {
+  res.send("API WORKING ✅");
+});
 
 // ROUTES
 app.use("/api/auth", authRoutes);
@@ -73,6 +82,26 @@ process.on("uncaughtException", err => {
   process.exit(1);
 });
 
+// HEALTH CHECK
+app.get("/api/health", async (_req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+      database: "ok",
+    });
+  } catch {
+    res.status(503).json({
+      status: "error",
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+      database: "error",
+    });
+  }
+});
+
 // HEALTH CHECK DE DB ANTES DE INICIAR EL SERVIDOR
 sequelize
   .authenticate()
@@ -81,7 +110,10 @@ sequelize
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
   })
-  .catch((err) => {
-    console.error("[STARTUP ERROR] No se pudo conectar a la base de datos:", err);
+  .catch(err => {
+    console.error(
+      "[STARTUP ERROR] No se pudo conectar a la base de datos:",
+      err,
+    );
     process.exit(1);
   });
