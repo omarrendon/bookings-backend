@@ -1,5 +1,6 @@
 // Models
 import { User } from "../models/user.model";
+import RefreshToken from "../models/refreshToken.model";
 
 // Dependencies
 import bcrypt from "bcrypt";
@@ -8,12 +9,13 @@ import bcrypt from "bcrypt";
 import { generateToken } from "../utils/jwt";
 import { EmailService } from "../modules/notifications/services/EmailService";
 import jwt from "jsonwebtoken";
-import { addMinutes } from "date-fns";
+import { addMinutes, addDays } from "date-fns";
 import PasswordResetToken from "../models/passwordResetToken";
+import { Op } from "sequelize";
 
 export async function loginUserWithEmailAndPassword(
   email: string,
-  password: string
+  password: string,
 ) {
   const user = await User.findOne({ where: { email } });
   if (!user) throw new Error("Usuario no encontrado.");
@@ -24,13 +26,17 @@ export async function loginUserWithEmailAndPassword(
   const token = generateToken(
     user.getDataValue("id"),
     user.getDataValue("email"),
-    user.getDataValue("role")
+    user.getDataValue("role"),
   );
 
-  return {
-    token,
-    user,
-  };
+  const refreshTokenValue = crypto.randomUUID();
+  await RefreshToken.create({
+    user_id: user.getDataValue("id"),
+    token: refreshTokenValue,
+    expires_at: addDays(new Date(), 7),
+  });
+
+  return { token, refreshToken: refreshTokenValue, user };
 }
 
 interface IregisterUser {
@@ -41,7 +47,7 @@ interface IregisterUser {
 }
 
 export async function registerBusinessWithEmailAndPassword(
-  registerUser: IregisterUser
+  registerUser: IregisterUser,
 ) {
   const emailService = new EmailService();
 
@@ -64,7 +70,7 @@ export async function registerBusinessWithEmailAndPassword(
 
   await emailService.sendEmailToValidateBusiness(
     registerUser.email,
-    user.getDataValue("id")
+    user.getDataValue("id"),
   );
 
   return user;
@@ -84,15 +90,15 @@ export const requestPasswordReset = async (email: string) => {
     if (!user) return { message: "Correo de recuperación enviado." };
 
     const token = crypto.randomUUID();
-    const expiresIn = addMinutes(new Date(), 15);
+    const expired_at = addMinutes(new Date(), 15);
 
     await PasswordResetToken.create({
-      userId: user.getDataValue("id"),
+      user_id: user.getDataValue("id"),
       token,
-      expiresIn,
+      expired_at,
     });
 
-    const resetLinkToken = `/login/reset-password?token=${token}`;
+    const resetLinkToken = `/login/reset-password?token=${encodeURIComponent(token)}`;
 
     await emailService.sendEmailToResetPassword(email, resetLinkToken);
     return { message: "Se ha mandado el link para el cambio de contraseña" };
@@ -112,23 +118,30 @@ export const resetPassword = async (token: string, newPassword: string) => {
       where: { token },
     });
     if (!passwordResetToken) throw new Error("Token no encontrado.");
-    if (passwordResetToken.getDataValue("used"))
+    if (passwordResetToken.getDataValue("is_used"))
       throw new Error("Este token ya ha sido utilizado.");
 
+    const expiredAt = passwordResetToken.getDataValue("expired_at");
+    if (!expiredAt || new Date() > new Date(expiredAt))
+      throw new Error("El token ha expirado.");
+
     const user = await User.findByPk(
-      passwordResetToken.getDataValue("user_id")
+      passwordResetToken.getDataValue("user_id"),
     );
     if (!user) throw new Error("Usuario no encontrado.");
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await User.update(
       { password: hashedPassword },
-      { where: { id: user.getDataValue("id") } }
+      { where: { id: user.getDataValue("id") } },
     );
 
-    await passwordResetToken.update(
-      { is_used: true },
-      { where: { id: passwordResetToken.getDataValue("id") } }
+    await passwordResetToken.update({ is_used: true });
+
+    // Revocar todos los refresh tokens del usuario al cambiar contraseña
+    await RefreshToken.update(
+      { is_revoked: true },
+      { where: { user_id: user.getDataValue("id"), is_revoked: false } },
     );
 
     const toEmail = user.getDataValue("email");
@@ -142,4 +155,38 @@ export const resetPassword = async (token: string, newPassword: string) => {
       throw new Error("Error al cambiar la contraseña : " + String(error));
     }
   }
+};
+
+export const refreshAccessToken = async (refreshToken: string) => {
+  const tokenRecord = await RefreshToken.findOne({
+    where: { token: refreshToken, is_revoked: false },
+    include: [{ model: User, as: "user" }],
+  });
+
+  if (!tokenRecord) throw new Error("Refresh token inválido.");
+
+  const expiresAt = tokenRecord.getDataValue("expires_at");
+  if (!expiresAt || new Date() > new Date(expiresAt))
+    throw new Error("Refresh token expirado.");
+
+  const user = tokenRecord.getDataValue("user");
+  const newAccessToken = generateToken(
+    user.getDataValue("id"),
+    user.getDataValue("email"),
+    user.getDataValue("role"),
+  );
+
+  return { token: newAccessToken };
+};
+
+export const revokeRefreshToken = async (refreshToken: string) => {
+  const tokenRecord = await RefreshToken.findOne({
+    where: { token: refreshToken },
+  });
+
+  if (!tokenRecord) throw new Error("Refresh token no encontrado.");
+
+  await tokenRecord.update({ is_revoked: true });
+
+  return { message: "Sesión cerrada exitosamente." };
 };

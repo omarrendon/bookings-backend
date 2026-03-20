@@ -5,23 +5,27 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware";
+import { validateBody } from "../middlewares/validate";
 // Controllers
 import {
   registerReservation,
   getAllReservationsForBusiness,
   updateReservationStatusByBusiness,
 } from "../controllers/reservation.controllers";
+// Models
 import Reservation from "../models/reservation.model";
 import Business from "../models/business.model";
+// Schemas
+import { createReservationSchema, updateReservationSchema } from "../schemas/reservation.schema";
 
 const router = express.Router();
 
-router.post("/", registerReservation);
+router.post("/", validateBody(createReservationSchema), registerReservation);
 router.get(
   "/:business_id",
   authenticateToken,
   authorizeRoles(["admin", "owner"]),
-  getAllReservationsForBusiness
+  getAllReservationsForBusiness,
 );
 router.put(
   "/:id",
@@ -35,7 +39,8 @@ router.put(
       relatedOwnerField: "owner_id", // Adjust this based on your Business model's structure
     },
   }),
-  updateReservationStatusByBusiness
+  validateBody(updateReservationSchema),
+  updateReservationStatusByBusiness,
 );
 
 export default router;

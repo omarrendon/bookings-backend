@@ -1,9 +1,19 @@
 import Joi from "joi";
 
+export const updateReservationSchema = Joi.object({
+  status: Joi.string()
+    .valid("pending", "confirmed", "cancelled", "completed")
+    .required()
+    .messages({
+      "any.only":
+        'El estado debe ser uno de los siguientes: pending, confirmed, cancelled, completed.',
+      "any.required": "El estado es requerido.",
+    }),
+});
+
 export const createReservationSchema = Joi.object({
   business_id: Joi.string().required(),
   user_id: Joi.string().optional(),
-  reservation_date: Joi.date().required(),
   customer_name: Joi.string().required().max(255),
   customer_email: Joi.string().email().required().max(255),
   customer_phone: Joi.string().required().max(20),

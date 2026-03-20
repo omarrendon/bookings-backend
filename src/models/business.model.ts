@@ -3,7 +3,6 @@ import { DataTypes } from "sequelize";
 import { sequelize } from "../database/sequelize";
 // Models
 import { User } from "./user.model";
-import Reservation from "./reservation.model";
 
 const Business = sequelize.define(
   "Business",
@@ -29,7 +28,7 @@ const Business = sequelize.define(
         len: [7, 20],
       },
     },
-    raiting: {
+    rating: {
       type: DataTypes.FLOAT,
       allowNull: false,
       defaultValue: 0,
@@ -73,10 +72,10 @@ const Business = sequelize.define(
       defaultValue: "México",
     },
     owner_id: {
-      type: DataTypes.UUID,
-      allowNull: true, // Assuming this can be null if not set
+      type: DataTypes.INTEGER,
+      allowNull: true,
       references: {
-        model: "users", // Assuming you have a users table
+        model: "users",
         key: "id",
       },
     },
@@ -102,7 +101,7 @@ const Business = sequelize.define(
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
-  }
+  },
 );
 
 Business.belongsTo(User, {

@@ -1,21 +1,33 @@
 // Dependencies
-import { Op } from "sequelize";
+import { Op, Transaction } from "sequelize";
+import { formatInTimeZone } from "date-fns-tz";
 // Models
 import Product from "../models/product.model";
 import Reservation from "../models/reservation.model";
 import ReservationProduct from "../models/reservationProduct.model";
+import Business from "../models/business.model";
+import Schedule from "../models/schedule.model";
+import { User } from "../models/user.model";
+// Database
+import { sequelize } from "../database/sequelize";
 // Services
-import { getBusinessByUserId } from "./business.services";
+import { EmailService } from "../modules/notifications/services/EmailService";
 // Utils
 import {
   addMinutesToDate,
   convertDateToUTC,
   convertUTCDateToLocal,
 } from "../utils/dateUtils";
-import Business from "../models/business.model";
-import Schedule from "../models/schedule.model";
-import { EmailService } from "../modules/notifications/services/EmailService";
-import { User } from "../models/user.model";
+import { AppError } from "../utils/AppError";
+import { scheduleCache } from "../utils/scheduleCache";
+// Interfaces
+import {
+  IScheduleDay,
+  IReservationProductInput,
+  IReservationData,
+} from "../interfaces/reservation.interface";
+
+const TIME_ZONE = process.env.TIMEZONE || "America/Mexico_City";
 
 // REGLAS DE NEGOCIO
 /*
@@ -26,31 +38,11 @@ import { User } from "../models/user.model";
 - Una reservación puede ser actualizada para cambiar su estado (pendiente, confirmada,
   cancelada, completada).
 - Una reservación no puede ser actualizada si ya fue completada.
-- Solo el propietario de la reservación puede actualizar su estado.
 */
 
-interface ScheduleDay {
-  id: string | number;
-  day: string;
-  open_time: string;
-  close_time: string;
-  [key: string]: any;
-}
-
-interface ReservationProductInput {
-  product_id: string;
-  quantity: number;
-}
-
-interface ReservationData {
-  business_id: string;
-  products: ReservationProductInput[];
-  [key: string]: any;
-}
-
 export const validateBusinessProducts = async (
-  products: ReservationProductInput[],
-  businessId: string
+  products: IReservationProductInput[],
+  businessId: string,
 ): Promise<boolean> => {
   try {
     const productIds = products.map(p => p.product_id);
@@ -61,16 +53,16 @@ export const validateBusinessProducts = async (
       },
     });
     const validProductIds = validProducts.map(product =>
-      product?.get("id")?.toString()
+      product?.get("id")?.toString(),
     );
 
     const invalidProductsIds = productIds.filter(
-      id => !validProductIds.includes(id)
+      id => !validProductIds.includes(id),
     );
 
     if (invalidProductsIds.length > 0) {
       const errorMessage = `Los siguientes ID's de los productos no pertenecen al negocio: ${invalidProductsIds.join(
-        ", "
+        ", ",
       )}`;
       return Promise.reject(new Error(errorMessage));
     }
@@ -79,32 +71,53 @@ export const validateBusinessProducts = async (
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(
-        `Error al validar productos del negocio: ${error.message}`
+        `Error al validar productos del negocio: ${error.message}`,
       );
     } else {
       throw new Error(
-        "Error al validar productos del negocio: Error desconocido"
+        "Error al validar productos del negocio: Error desconocido",
       );
     }
   }
 };
 
-export const createReservation = async (reservationData: ReservationData) => {
+export const createReservation = async (reservationData: IReservationData) => {
+  const t = await sequelize.transaction({
+    isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+  });
+
   try {
     const emailService = new EmailService();
     const { business_id, products, ...data } = reservationData;
+
+    // Consulta única: obtener y validar productos en un solo query
     const productsFounded = await Product.findAll({
       where: {
         id: products.map(p => p.product_id),
         business_id,
       },
+      transaction: t,
     });
-    if (productsFounded.length === 0)
-      throw new Error("No se encontraron productos.");
+
+    const foundIds = productsFounded.map(p => p.get("id")?.toString());
+    const invalidIds = products
+      .map(p => p.product_id)
+      .filter(id => !foundIds.includes(id));
+
+    if (invalidIds.length > 0) {
+      throw new AppError(
+        `Los siguientes ID's de los productos no pertenecen al negocio: ${invalidIds.join(", ")}`,
+        400,
+      );
+    }
+
+    if (productsFounded.length === 0) {
+      throw new AppError("No se encontraron productos.", 400);
+    }
 
     const totalDurationInMinutes = productsFounded.reduce((total, product) => {
       const duration = Math.trunc(
-        product.get("estimated_delivery_time") as number
+        product.get("estimated_delivery_time") as number,
       );
       return total + (duration || 0);
     }, 0);
@@ -114,149 +127,161 @@ export const createReservation = async (reservationData: ReservationData) => {
 
     const businessReservation = await Business.findByPk(business_id, {
       include: [
-        {
-          model: Schedule,
-          as: "schedules",
-        },
-        {
-          model: User,
-          as: "user",
-        },
+        { model: Schedule, as: "schedules" },
+        { model: User, as: "user" },
       ],
+      transaction: t,
     });
 
-    const user = businessReservation?.getDataValue("user");
-    const workingHours = businessReservation?.getDataValue("schedules");
-    const dayOfWeek = startDate.toLocaleDateString("en-US", {
-      weekday: "long",
-    });
+    if (!businessReservation) {
+      throw new AppError("Negocio no encontrado.", 404);
+    }
 
-    const dayOfReservation: ScheduleDay[] | undefined = workingHours?.filter(
-      (day: ScheduleDay) => day.day === dayOfWeek
+    const user = businessReservation.getDataValue("user");
+    const workingHours = businessReservation.getDataValue("schedules");
+
+    // Usar la zona horaria del negocio para determinar el día correctamente
+    const dayOfWeek = formatInTimeZone(startDate, TIME_ZONE, "EEEE");
+
+    const dayOfReservation: IScheduleDay[] =
+      workingHours?.filter((day: IScheduleDay) => day.day === dayOfWeek) ?? [];
+
+    if (dayOfReservation.length === 0) {
+      throw new AppError("El negocio no opera el día seleccionado.", 400);
+    }
+
+    // Obtener hora local para comparar con los horarios del negocio
+    const startLocalHour = parseInt(
+      formatInTimeZone(startDate, TIME_ZONE, "H"),
+      10,
+    );
+    const startLocalMinute = parseInt(
+      formatInTimeZone(startDate, TIME_ZONE, "m"),
+      10,
+    );
+    const endLocalHour = parseInt(
+      formatInTimeZone(endDate, TIME_ZONE, "H"),
+      10,
+    );
+    const endLocalMinute = parseInt(
+      formatInTimeZone(endDate, TIME_ZONE, "m"),
+      10,
     );
 
-    const startDateHour = startDate.getHours();
-    const startDateMinute = startDate.getMinutes();
-    const endDateHour = endDate.getHours();
-    const endDateMinute = endDate.getMinutes();
+    const scheduleValidate = dayOfReservation.map(
+      (day: IScheduleDay): boolean => {
+        if (!day.open_time || !day.close_time) return false;
 
-    const scheduleValidate = dayOfReservation?.map(
-      (day: ScheduleDay): boolean => {
-        if (!day.open_time || !day.close_time) {
-          throw new Error(
-            "El negocio está cerrado el día seleccionado para la reservación."
-          );
-        }
         const [openHour, openMinute] = day.open_time.split(":").map(Number);
         const [closeHour, closeMinute] = day.close_time.split(":").map(Number);
 
-        if (startDateHour >= openHour && endDateHour <= closeHour) return true;
-        if (endDateHour > closeHour && startDateHour < openHour) {
-          throw new Error(
-            "La hora de finalización de la reservación es después de la hora de cierre del negocio."
-          );
-        }
-        return false;
-      }
+        const startTotal = startLocalHour * 60 + startLocalMinute;
+        const endTotal = endLocalHour * 60 + endLocalMinute;
+        const openTotal = openHour * 60 + openMinute;
+        const closeTotal = closeHour * 60 + closeMinute;
+
+        return startTotal >= openTotal && endTotal <= closeTotal;
+      },
     );
-    if (!scheduleValidate?.includes(true)) {
-      throw new Error(
-        "La hora de la reservación no está dentro del horario laboral del negocio."
+
+    if (!scheduleValidate.includes(true)) {
+      throw new AppError(
+        "La hora de la reservación no está dentro del horario laboral del negocio.",
+        400,
       );
     }
 
     const overLappingReservations = await Reservation.findOne({
       where: {
         business_id,
-        status: ["pending", "confirmed"],
+        status: { [Op.in]: ["pending", "confirmed"] },
         [Op.and]: [
-          {
-            start_time: {
-              [Op.lt]: endDate,
-            },
-          },
-          {
-            end_time: {
-              [Op.gt]: startDate,
-            },
-          },
+          { start_time: { [Op.lt]: endDate } },
+          { end_time: { [Op.gt]: startDate } },
         ],
       },
+      transaction: t,
     });
-    if (overLappingReservations)
-      throw new Error("Ya existe una reserva en ese horario.");
 
-    const reservation = await Reservation.create({
-      ...data,
-      business_id,
-      start_time: startDate,
-      end_time: endDate,
+    if (overLappingReservations) {
+      throw new AppError("Ya existe una reserva en ese horario.", 409);
+    }
+
+    const reservation = await Reservation.create(
+      {
+        ...data,
+        business_id,
+        start_time: startDate,
+        end_time: endDate,
+      },
+      { transaction: t },
+    );
+
+    const productEntries = products.map((prod: IReservationProductInput) => ({
+      reservation_id: reservation.get("id") as string | number | undefined,
+      product_id: prod.product_id,
+      quantity: prod.quantity,
+    }));
+
+    const response = await ReservationProduct.bulkCreate(productEntries, {
+      transaction: t,
     });
-    if (!reservation) throw new Error("No se pudo crear la reservación.");
 
+    await t.commit();
+
+    // Convertir a hora local para la respuesta y el email (después del commit)
     reservation.setDataValue(
       "start_time",
-      convertUTCDateToLocal(reservation.getDataValue("start_time"))
+      convertUTCDateToLocal(reservation.getDataValue("start_time")),
     );
     reservation.setDataValue(
       "end_time",
-      convertUTCDateToLocal(reservation.getDataValue("end_time"))
+      convertUTCDateToLocal(reservation.getDataValue("end_time")),
     );
 
     const emailFieldsInformation = {
       toBusiness: user?.getDataValue("email"),
       to: data.customer_email,
       name: data.customer_name,
-      businessName: businessReservation?.getDataValue("name"),
+      businessName: businessReservation.getDataValue("name"),
       reservationId: reservation.getDataValue("id"),
       startTime: reservation.getDataValue("start_time"),
       endTime: reservation.getDataValue("end_time"),
-      products: reservation.getDataValue("products"),
+      products: productsFounded,
     };
-    await emailService.sendEmailToRegisterReservation(emailFieldsInformation);
-    await emailService.sendEmailToNewReservation(emailFieldsInformation);
 
-    const productEntries: {
-      reservation_id: string | number | undefined;
-      product_id: string;
-      quantity: number;
-    }[] = products.map((prod: ReservationProductInput) => ({
-      reservation_id: reservation.get("id") as string | number | undefined,
-      product_id: prod.product_id,
-      quantity: prod.quantity,
-    }));
-    const response = await ReservationProduct.bulkCreate(productEntries);
+    // Invalidar cache de slots para este negocio
+    scheduleCache.invalidate(`${business_id}:`);
+
+    // Enviar emails en paralelo sin bloquear la respuesta ni afectar la transaccion
+    Promise.allSettled([
+      emailService.sendEmailToRegisterReservation(emailFieldsInformation),
+      emailService.sendEmailToNewReservation(emailFieldsInformation),
+    ]).then((results) => {
+      results.forEach((result) => {
+        if (result.status === "rejected") {
+          console.error("[EMAIL ERROR] Error al enviar email de reservacion:", result.reason);
+        }
+      });
+    });
 
     return { reservation, products: response };
   } catch (error) {
+    await t.rollback();
+    if (error instanceof AppError) throw error;
     if (error instanceof Error) {
       throw new Error(`Error al crear reserva: ${error.message}`);
-    } else {
-      throw new Error("Error al crear reserva: Error desconocido");
     }
+    throw new Error("Error al crear reserva: Error desconocido");
   }
 };
 
 export const getAllReservationsForBusiness = async (
-  userId: string | undefined,
-  role: string | undefined,
-  business_id?: string | string[] | undefined
+  business_id?: string | string[] | undefined,
 ) => {
   try {
-    let where: any = {};
-
-    if (role === "owner") {
-      const businessObj = await getBusinessByUserId(userId);
-      if (!businessObj || !businessObj.business)
-        throw new Error("No se encontró el negocio del propietario.");
-      where.business_id = businessObj.business?.get("id");
-    }
-    if (role === "admin" && business_id) {
-      where.business_id = business_id;
-    }
-
     const reservations = await Reservation.findAll({
-      where,
+      where: { business_id },
       include: [
         {
           model: Product,
@@ -289,7 +314,7 @@ enum ReservationStatus {
 export const updateStatus = async (
   reservationId: string,
   statusData: { status: ReservationStatus },
-  user?: any
+  user?: { userId: string; email: string; role: string },
 ) => {
   try {
     const emailService = new EmailService();
@@ -312,15 +337,11 @@ export const updateStatus = async (
 
     const modifyStatus = {
       status: statusData.status,
-      updated_by: JSON.stringify(user),
+      updated_by: user?.userId ?? null,
       updated_at: new Date(),
     };
 
-    const updatedReservation = await reservation.update(modifyStatus, {
-      where: {
-        id: reservationId,
-      },
-    });
+    const updatedReservation = await reservation.update(modifyStatus);
 
     const emailBody = {
       to: reservation.getDataValue("customer_email"),
@@ -344,32 +365,6 @@ export const updateStatus = async (
       throw new Error(`Error al actualizar la reservación: ${error.message}`);
     } else {
       throw new Error("Error al actualizar la reservación: Error desconocido");
-    }
-  }
-};
-
-// PENDING: Implementar la lógica para cancelar una reservación por parte del cliente
-export const cancelReservationByCustomer = async (
-  reservationId: string,
-  userId: string | undefined
-) => {
-  try {
-    const reservation = await Reservation.findByPk(reservationId);
-    if (!reservation) throw new Error("Reservación no encontrada.");
-
-    if (reservation.getDataValue("customer_id") !== userId) {
-      throw new Error("No tienes permisos para cancelar esta reservación.");
-    }
-
-    reservation.setDataValue("status", ReservationStatus.CANCELLED);
-    await reservation.save();
-
-    return reservation;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Error al cancelar la reservación: ${error.message}`);
-    } else {
-      throw new Error("Error al cancelar la reservación: Error desconocido");
     }
   }
 };
