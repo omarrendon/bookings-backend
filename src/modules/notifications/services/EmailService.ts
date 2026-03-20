@@ -8,6 +8,7 @@ import newReservationTemplate from "../templates/NewReservationTemplate";
 import validateBusinessCountTemplate from "../templates/ValidateBusinessCountTemplate";
 import passwordResetTemplate from "../templates/PasswordResetTemplate";
 import ConfirmPasswordHasBeenUpdated from "../templates/ConfirmPasswordHasBeenUpdated";
+import businessCreatedTemplate from "../templates/BusinessCreatedTemplate";
 
 interface IReservationEmailFields {
   to: string;
@@ -62,8 +63,8 @@ export class EmailService {
   }
 
   public async sendEmailToNewReservation(fields: IReservationEmailFields) {
-    const { toBusiness, ...body } = fields;
-    await this.dispatch(toBusiness, newReservationTemplate, body);
+    const { toBusiness, to: customerEmail, ...body } = fields;
+    await this.dispatch(toBusiness, newReservationTemplate, { ...body, customerEmail });
   }
 
   public async sendEmailToValidateBusiness(to: string, userId: string) {
@@ -79,11 +80,6 @@ export class EmailService {
   }
 
   public async sendBussinesCreated(to: string, businessName: string) {
-    const subject = `¡Tu negocio "${businessName}" fue creado con éxito!`;
-    const bodyTemplate = `
-      <h1>¡Felicidades!</h1>
-      <p>Tu negocio <strong>${businessName}</strong> ya está registrado en nuestra plataforma.</p>
-    `;
-    await this.provider.sendEmail(to, subject, bodyTemplate);
+    await this.dispatch(to, businessCreatedTemplate, businessName);
   }
 }

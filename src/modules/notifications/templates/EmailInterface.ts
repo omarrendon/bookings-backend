@@ -5,4 +5,6 @@ export interface IReservationDetails {
   status?: string;
   endTime?: string;
   products?: object[];
+  reservationId?: string | number;
+  customerEmail?: string;
 }
