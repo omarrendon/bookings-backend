@@ -28,11 +28,6 @@ const Business = sequelize.define(
         len: [7, 20],
       },
     },
-    rating: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-      defaultValue: 0,
-    },
     street: {
       type: DataTypes.STRING(100),
       allowNull: false,
