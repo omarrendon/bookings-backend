@@ -58,11 +58,11 @@ app.get("/api", (_req, res) => {
 
 // ROUTES
 app.use("/api/auth", authRoutes);
-app.use("/api/business", businessRoutes);
-app.use("/api/category", categoriesRoutes);
-app.use("/api/product", productRoutes);
-app.use("/api/reservation", reservationRoutes);
-app.use("/api/schedule", schedulesRoutes);
+app.use("/api/businesses", businessRoutes);
+app.use("/api/categories", categoriesRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/reservations", reservationRoutes);
+app.use("/api/schedules", schedulesRoutes);
 
 // GLOBAL ERROR HANDLER
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
