@@ -86,7 +86,7 @@ export const getBusinessById = async (businessId: string) => {
   try {
     const business = await Business.findByPk(businessId, {
       include: [
-        { model: User, as: "owner", attributes: ["id", "name", "email"] },
+        { model: User, as: "user", attributes: ["id", "name", "email"] },
       ],
     });
 
