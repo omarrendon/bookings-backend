@@ -211,6 +211,7 @@ export const createReservation = async (reservationData: IReservationData) => {
       {
         ...data,
         business_id,
+        reservation_date: startDate,
         start_time: startDate,
         end_time: endDate,
       },

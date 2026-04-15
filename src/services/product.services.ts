@@ -20,6 +20,21 @@ export const getAllProducts = async (id: string) => {
     const products = await Product.findAll({
       where: { business_id: id },
     });
+    // const productsWithFixedNumbers = products.map(product => {
+    //   const price = parseFloat(
+    //     product.getDataValue("price") as unknown as string,
+    //   );
+    //   const estimated_delivery_time = parseFloat(
+    //     product.getDataValue("estimated_delivery_time") as unknown as string,
+    //   );
+    //   return {
+    //     ...product.toJSON(),
+    //     price: isNaN(price) ? 0 : price,
+    //     estimated_delivery_time: isNaN(estimated_delivery_time)
+    //       ? 0
+    //       : estimated_delivery_time,
+    //   };
+    // });
     return products;
   } catch (error) {
     throw new Error("Error al obtener productos");
