@@ -41,6 +41,7 @@ export async function loginUserWithEmailAndPassword(
 
 interface IregisterUser {
   name: string;
+  last_name: string;
   email: string;
   password: string;
   role: string;
@@ -68,12 +69,25 @@ export async function registerBusinessWithEmailAndPassword(
     password: hashedPassword,
   });
 
+  const token = generateToken(
+    user.getDataValue("id"),
+    user.getDataValue("email"),
+    user.getDataValue("role"),
+  );
+
+  const refreshTokenValue = crypto.randomUUID();
+  await RefreshToken.create({
+    user_id: user.getDataValue("id"),
+    token: refreshTokenValue,
+    expires_at: addDays(new Date(), 7),
+  });
+
   await emailService.sendEmailToValidateBusiness(
     registerUser.email,
     user.getDataValue("id"),
   );
 
-  return user;
+  return { user, token, refreshToken: refreshTokenValue };
 }
 
 export const getRoleByuser = async (userId: string) => {

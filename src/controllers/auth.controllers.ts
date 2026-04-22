@@ -61,12 +61,27 @@ export async function signUpBusiness(req: Request, res: Response) {
     if (error)
       return res.status(400).json({ message: error.message, success: false });
 
-    const user = await registerBusinessWithEmailAndPassword(value);
-    const { name, email } = user.get({ plain: true });
+    const { user, token, refreshToken } = await registerBusinessWithEmailAndPassword(value);
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return res.status(201).json({
       message: "Usuario ha sido creado exitosamente.",
-      data: { name, email },
+      data: {
+        token,
+        user: {
+          id: user.getDataValue("id"),
+          name: user.getDataValue("name"),
+          last_name: user.getDataValue("last_name"),
+          email: user.getDataValue("email"),
+          role: user.getDataValue("role"),
+        },
+      },
       success: true,
     });
   } catch (err) {
@@ -117,7 +132,10 @@ export const passwordUpdated = async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error desconocido";
     console.error("[passwordUpdated]", error);
-    return res.status(500).json({ message, success: false });
+    const isTokenError = ["Token no encontrado", "ya ha sido utilizado", "ha expirado"].some(
+      (e) => message.includes(e),
+    );
+    return res.status(isTokenError ? 400 : 500).json({ message, success: false });
   }
 };
 
