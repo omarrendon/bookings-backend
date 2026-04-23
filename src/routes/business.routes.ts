@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import {
   createBusiness,
   deleteBusiness,
@@ -6,6 +7,7 @@ import {
   getBusinessById,
   updateBusiness,
 } from "../controllers/business.controllers";
+import { uploadImage, uploadGallery } from "../controllers/upload.controllers";
 import {
   authenticateToken,
   authorizeRoles,
@@ -15,6 +17,7 @@ import { createBusinessSchema, updateBusinessSchema } from "../schemas/business.
 import Business from "../models/business.model";
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.post(
   "/",
@@ -43,5 +46,18 @@ router.put(
 
 router.get("/", authenticateToken, authorizeRoles(["admin"]), getAllBusinesses);
 router.get("/:id", getBusinessById);
+
+router.post(
+  "/upload-image",
+  authenticateToken,
+  upload.single("file"),
+  uploadImage,
+);
+router.post(
+  "/upload-gallery",
+  authenticateToken,
+  upload.array("files", 5),
+  uploadGallery,
+);
 
 export default router;
