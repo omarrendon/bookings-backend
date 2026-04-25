@@ -50,17 +50,20 @@ interface IregisterUser {
 export async function registerBusinessWithEmailAndPassword(
   registerUser: IregisterUser,
 ) {
+  console.log(`[AUTH] Iniciando registro de usuario: ${registerUser.email}`);
   const emailService = new EmailService();
 
   const existingUser = await User.findOne({
     where: { email: registerUser.email },
   });
   if (existingUser) {
+    console.warn(`[AUTH] Registro fallido - email ya existente: ${registerUser.email}`);
     throw new Error("Usuario ya existente.");
   }
 
   const hashedPassword = await bcrypt.hash(registerUser.password, 10);
   if (!hashedPassword) {
+    console.error(`[AUTH] Error al hashear la contraseña para: ${registerUser.email}`);
     throw new Error("Error al hashear la contraseña.");
   }
 
@@ -68,12 +71,14 @@ export async function registerBusinessWithEmailAndPassword(
     ...registerUser,
     password: hashedPassword,
   });
+  console.log(`[AUTH] Usuario creado exitosamente - id: ${user.getDataValue("id")}, email: ${registerUser.email}, role: ${user.getDataValue("role")}`);
 
   const token = generateToken(
     user.getDataValue("id"),
     user.getDataValue("email"),
     user.getDataValue("role"),
   );
+  console.log(`[AUTH] JWT generado para usuario id: ${user.getDataValue("id")}`);
 
   const refreshTokenValue = crypto.randomUUID();
   await RefreshToken.create({
@@ -81,11 +86,17 @@ export async function registerBusinessWithEmailAndPassword(
     token: refreshTokenValue,
     expires_at: addDays(new Date(), 7),
   });
+  console.log(`[AUTH] Refresh token creado para usuario id: ${user.getDataValue("id")}`);
 
-  await emailService.sendEmailToValidateBusiness(
-    registerUser.email,
-    user.getDataValue("id"),
-  );
+  try {
+    await emailService.sendEmailToValidateBusiness(
+      registerUser.email,
+      user.getDataValue("id"),
+    );
+    console.log(`[AUTH] Email de validación enviado a: ${registerUser.email}`);
+  } catch (emailError) {
+    console.error(`[AUTH] Error al enviar email de validación a ${registerUser.email}:`, emailError);
+  }
 
   return { user, token, refreshToken: refreshTokenValue };
 }

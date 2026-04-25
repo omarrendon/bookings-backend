@@ -1,5 +1,6 @@
 //Models
 import Product from "../models/product.model";
+import ProductImage from "../models/product-image.model";
 //Interfaces
 import { IProduct } from "../interfaces/product.interfaces";
 
@@ -19,6 +20,7 @@ export const getAllProducts = async (id: string) => {
   try {
     const products = await Product.findAll({
       where: { business_id: id },
+      include: [{ model: ProductImage, as: "images", order: [["order", "ASC"]] }],
     });
     // const productsWithFixedNumbers = products.map(product => {
     //   const price = parseFloat(
