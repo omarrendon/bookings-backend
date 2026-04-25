@@ -1,5 +1,6 @@
 // Dependencies
 import { Router } from "express";
+import multer from "multer";
 // Middlewares
 import {
   authenticateToken,
@@ -14,10 +15,17 @@ import {
   getProducts,
   updateProduct,
 } from "../controllers/product.controllers";
+import {
+  uploadImage,
+  uploadGallery,
+  deleteImage,
+  getImages,
+} from "../controllers/product-image.controllers";
 import Product from "../models/product.model";
 import Business from "../models/business.model";
 
 const route = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 route.post(
   "/",
@@ -60,5 +68,11 @@ route.delete(
   }),
   deleteProduct,
 );
+
+// Product images (rutas estáticas antes que las dinámicas para evitar conflictos)
+route.delete("/images/:imageId", authenticateToken, deleteImage);
+route.get("/:productId/images", getImages);
+route.post("/:productId/upload-image", authenticateToken, upload.single("file"), uploadImage);
+route.post("/:productId/upload-gallery", authenticateToken, upload.array("files", 5), uploadGallery);
 
 export default route;
