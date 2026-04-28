@@ -56,9 +56,15 @@ export const getSchedulesByBusiness = async (req: Request, res: Response) => {
 export const updateSchedule = async (req: Request, res: Response) => {
   try {
     const scheduleId = req.params.id;
+    const userId = req.user?.userId;
+
+    if (!scheduleId || !userId) {
+      throw new Error("ID de horario o usuario no proporcionado.");
+    }
+
     const { updatedSchedule } = await scheduleService.updateSchedule(
       scheduleId,
-      req.body.hours,
+      req.body,
     );
 
     return res.status(200).json({
@@ -70,6 +76,26 @@ export const updateSchedule = async (req: Request, res: Response) => {
     const statusCode = error instanceof AppError ? error.statusCode : 500;
     const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(statusCode).json({
+      message: "Error interno del servidor: " + errorMessage,
+      success: false,
+    });
+  }
+};
+
+export const getScheduleConfig = async (req: Request, res: Response) => {
+  try {
+    const { business_id } = req.params;
+
+    const { schedules } = await scheduleService.getScheduleConfig(business_id);
+
+    return res.status(200).json({
+      data: schedules,
+      message: "Configuración de horarios obtenida exitosamente.",
+      success: true,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({
       message: "Error interno del servidor: " + errorMessage,
       success: false,
     });

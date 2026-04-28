@@ -14,16 +14,8 @@ const Schedule = sequelize.define(
       allowNull: false,
       primaryKey: true,
     },
-    day: {
-      type: DataTypes.ENUM(
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-      ),
+    date: {
+      type: DataTypes.DATEONLY,
       allowNull: false,
     },
     open_time: {
