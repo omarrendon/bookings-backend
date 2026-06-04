@@ -3,6 +3,7 @@ import { Router } from "express";
 // CONTROLLERS
 import {
   getSchedulesByBusiness,
+  getScheduleConfig,
   createSchedule,
   updateSchedule,
 } from "../controllers/schedule.controllers";
@@ -22,7 +23,9 @@ import Business from "../models/business.model";
 
 const router = Router();
 
+// Rutas estáticas antes que dinámicas
 router.get("/:business_id/slots/month", getSchedulesByBusiness);
+router.get("/:business_id", getScheduleConfig);
 
 router.post(
   "/",

@@ -88,6 +88,26 @@ export const getAllBusinesses = async (_req: Request, res: Response) => {
   }
 };
 
+export const getMyBusiness = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "No autorizado.", success: false });
+    }
+    const { business } = await businessService.getMyBusiness(userId);
+    return res.status(200).json({
+      data: business,
+      message: "Negocio obtenido exitosamente.",
+      success: true,
+    });
+  } catch (err) {
+    const statusCode = err instanceof AppError ? err.statusCode : 500;
+    const message = err instanceof Error ? err.message : "Error desconocido";
+    console.error("[getMyBusiness]", err);
+    return res.status(statusCode).json({ message, success: false });
+  }
+};
+
 export const getBusinessById = async (req: Request, res: Response) => {
   try {
     if (!req.params.id) {

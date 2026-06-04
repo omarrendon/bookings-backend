@@ -36,9 +36,31 @@ const hourSchema = Joi.object({
 
 export const createScheduleSchema = Joi.object({
   business_id: Joi.number().integer().positive().required(),
+  date_from: Joi.string().isoDate().required(),
+  date_to: Joi.string().isoDate().required(),
   hours: Joi.array().items(hourSchema).min(1).required(),
-});
+})
+  .custom((value, helpers) => {
+    if (new Date(value.date_from) > new Date(value.date_to)) {
+      return helpers.error("date.invalidRange");
+    }
+    return value;
+  })
+  .messages({
+    "date.invalidRange": "date_from debe ser anterior o igual a date_to.",
+  });
 
 export const updateScheduleSchema = Joi.object({
+  date_from: Joi.string().isoDate().required(),
+  date_to: Joi.string().isoDate().required(),
   hours: Joi.array().items(hourSchema).min(1).required(),
-});
+})
+  .custom((value, helpers) => {
+    if (new Date(value.date_from) > new Date(value.date_to)) {
+      return helpers.error("date.invalidRange");
+    }
+    return value;
+  })
+  .messages({
+    "date.invalidRange": "date_from debe ser anterior o igual a date_to.",
+  });

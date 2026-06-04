@@ -61,7 +61,8 @@ export async function signUpBusiness(req: Request, res: Response) {
     if (error)
       return res.status(400).json({ message: error.message, success: false });
 
-    const { user, token, refreshToken } = await registerBusinessWithEmailAndPassword(value);
+    const { user, token, refreshToken } =
+      await registerBusinessWithEmailAndPassword(value);
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -130,12 +131,17 @@ export const passwordUpdated = async (req: Request, res: Response) => {
       .status(200)
       .json({ message: "Contraseña actualizada exitosamente.", success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
+    const message =
+      error instanceof Error ? error.message : "Error desconocido";
     console.error("[passwordUpdated]", error);
-    const isTokenError = ["Token no encontrado", "ya ha sido utilizado", "ha expirado"].some(
-      (e) => message.includes(e),
-    );
-    return res.status(isTokenError ? 400 : 500).json({ message, success: false });
+    const isTokenError = [
+      "Token no encontrado",
+      "ya ha sido utilizado",
+      "ha expirado",
+    ].some(e => message.includes(e));
+    return res
+      .status(isTokenError ? 400 : 500)
+      .json({ message, success: false });
   }
 };
 
@@ -148,12 +154,10 @@ export const refresh = async (req: Request, res: Response) => {
         .json({ message: "Refresh token requerido.", success: false });
     }
 
-    const { token } = await refreshAccessToken(refreshToken);
-    return res.json({ data: { token }, success: true });
+    const { token, user } = await refreshAccessToken(refreshToken);
+    return res.json({ data: { token, user }, success: true });
   } catch (error) {
-    return res
-      .status(401)
-      .json({ message: `${error}`, success: false });
+    return res.status(401).json({ message: `${error}`, success: false });
   }
 };
 
