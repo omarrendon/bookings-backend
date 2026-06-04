@@ -6,6 +6,7 @@ import {
   getAllBusinesses,
   getBusinessById,
   updateBusiness,
+  getMyBusiness,
 } from "../controllers/business.controllers";
 import { uploadImage, uploadGallery } from "../controllers/upload.controllers";
 import {
@@ -13,7 +14,10 @@ import {
   authorizeRoles,
 } from "../middlewares/auth.middleware";
 import { validateBody } from "../middlewares/validate";
-import { createBusinessSchema, updateBusinessSchema } from "../schemas/business.schema";
+import {
+  createBusinessSchema,
+  updateBusinessSchema,
+} from "../schemas/business.schema";
 import Business from "../models/business.model";
 
 const router = Router();
@@ -44,6 +48,7 @@ router.put(
   updateBusiness,
 );
 
+router.get("/my", authenticateToken, authorizeRoles(["owner"]), getMyBusiness);
 router.get("/", authenticateToken, authorizeRoles(["admin"]), getAllBusinesses);
 router.get("/:id", getBusinessById);
 

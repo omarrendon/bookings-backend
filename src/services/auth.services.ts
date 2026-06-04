@@ -57,13 +57,17 @@ export async function registerBusinessWithEmailAndPassword(
     where: { email: registerUser.email },
   });
   if (existingUser) {
-    console.warn(`[AUTH] Registro fallido - email ya existente: ${registerUser.email}`);
+    console.warn(
+      `[AUTH] Registro fallido - email ya existente: ${registerUser.email}`,
+    );
     throw new Error("Usuario ya existente.");
   }
 
   const hashedPassword = await bcrypt.hash(registerUser.password, 10);
   if (!hashedPassword) {
-    console.error(`[AUTH] Error al hashear la contraseña para: ${registerUser.email}`);
+    console.error(
+      `[AUTH] Error al hashear la contraseña para: ${registerUser.email}`,
+    );
     throw new Error("Error al hashear la contraseña.");
   }
 
@@ -71,14 +75,18 @@ export async function registerBusinessWithEmailAndPassword(
     ...registerUser,
     password: hashedPassword,
   });
-  console.log(`[AUTH] Usuario creado exitosamente - id: ${user.getDataValue("id")}, email: ${registerUser.email}, role: ${user.getDataValue("role")}`);
+  console.log(
+    `[AUTH] Usuario creado exitosamente - id: ${user.getDataValue("id")}, email: ${registerUser.email}, role: ${user.getDataValue("role")}`,
+  );
 
   const token = generateToken(
     user.getDataValue("id"),
     user.getDataValue("email"),
     user.getDataValue("role"),
   );
-  console.log(`[AUTH] JWT generado para usuario id: ${user.getDataValue("id")}`);
+  console.log(
+    `[AUTH] JWT generado para usuario id: ${user.getDataValue("id")}`,
+  );
 
   const refreshTokenValue = crypto.randomUUID();
   await RefreshToken.create({
@@ -86,7 +94,9 @@ export async function registerBusinessWithEmailAndPassword(
     token: refreshTokenValue,
     expires_at: addDays(new Date(), 7),
   });
-  console.log(`[AUTH] Refresh token creado para usuario id: ${user.getDataValue("id")}`);
+  console.log(
+    `[AUTH] Refresh token creado para usuario id: ${user.getDataValue("id")}`,
+  );
 
   try {
     await emailService.sendEmailToValidateBusiness(
@@ -95,7 +105,10 @@ export async function registerBusinessWithEmailAndPassword(
     );
     console.log(`[AUTH] Email de validación enviado a: ${registerUser.email}`);
   } catch (emailError) {
-    console.error(`[AUTH] Error al enviar email de validación a ${registerUser.email}:`, emailError);
+    console.error(
+      `[AUTH] Error al enviar email de validación a ${registerUser.email}:`,
+      emailError,
+    );
   }
 
   return { user, token, refreshToken: refreshTokenValue };
@@ -195,13 +208,20 @@ export const refreshAccessToken = async (refreshToken: string) => {
     throw new Error("Refresh token expirado.");
 
   const user = tokenRecord.getDataValue("user");
+  const currentUser = {
+    id: user.getDataValue("id"),
+    email: user.getDataValue("email"),
+    role: user.getDataValue("role"),
+    last_name: user.getDataValue("last_name"),
+    name: user.getDataValue("name"),
+  };
   const newAccessToken = generateToken(
     user.getDataValue("id"),
     user.getDataValue("email"),
     user.getDataValue("role"),
   );
 
-  return { token: newAccessToken };
+  return { token: newAccessToken, user: currentUser };
 };
 
 export const revokeRefreshToken = async (refreshToken: string) => {
