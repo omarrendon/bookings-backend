@@ -14,9 +14,10 @@ export const createSchedule = async (req: Request, res: Response) => {
       success: true,
     });
   } catch (error) {
+    const statusCode = error instanceof AppError ? error.statusCode : 500;
     const errorMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({
-      message: "Error interno del servidor: " + errorMessage,
+    res.status(statusCode).json({
+      message: error instanceof AppError ? errorMessage : "Error interno del servidor: " + errorMessage,
       success: false,
     });
   }

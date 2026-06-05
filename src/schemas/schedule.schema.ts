@@ -34,33 +34,59 @@ const hourSchema = Joi.object({
     "hours.invalidRange": "open_time debe ser anterior a close_time.",
   });
 
+const validateNoOverlaps = (value: { hours: { day: string; open_time: string | null; close_time: string | null }[] }, helpers: Joi.CustomHelpers) => {
+  const byDay: Record<string, { open_time: string; close_time: string }[]> = {};
+
+  for (const entry of value.hours) {
+    if (!entry.open_time || !entry.close_time) continue;
+    if (!byDay[entry.day]) byDay[entry.day] = [];
+    byDay[entry.day].push({ open_time: entry.open_time, close_time: entry.close_time });
+  }
+
+  for (const day of Object.keys(byDay)) {
+    const blocks = byDay[day].sort((a, b) => a.open_time.localeCompare(b.open_time));
+
+    for (let i = 0; i < blocks.length - 1; i++) {
+      if (blocks[i].close_time > blocks[i + 1].open_time) {
+        return helpers.error("hours.overlap", { day, block: `${blocks[i].open_time}–${blocks[i].close_time} se solapa con ${blocks[i + 1].open_time}–${blocks[i + 1].close_time}` });
+      }
+    }
+  }
+
+  return value;
+};
+
 export const createScheduleSchema = Joi.object({
   business_id: Joi.number().integer().positive().required(),
   date_from: Joi.string().isoDate().required(),
   date_to: Joi.string().isoDate().required(),
+  slot_duration_minutes: Joi.number().integer().min(15).max(480).default(60),
   hours: Joi.array().items(hourSchema).min(1).required(),
 })
   .custom((value, helpers) => {
     if (new Date(value.date_from) > new Date(value.date_to)) {
       return helpers.error("date.invalidRange");
     }
-    return value;
+    return validateNoOverlaps(value, helpers);
   })
   .messages({
     "date.invalidRange": "date_from debe ser anterior o igual a date_to.",
+    "hours.overlap": "Los bloques horarios del {{#day}} se solapan: {{#block}}.",
   });
 
 export const updateScheduleSchema = Joi.object({
   date_from: Joi.string().isoDate().required(),
   date_to: Joi.string().isoDate().required(),
+  slot_duration_minutes: Joi.number().integer().min(15).max(480).default(60),
   hours: Joi.array().items(hourSchema).min(1).required(),
 })
   .custom((value, helpers) => {
     if (new Date(value.date_from) > new Date(value.date_to)) {
       return helpers.error("date.invalidRange");
     }
-    return value;
+    return validateNoOverlaps(value, helpers);
   })
   .messages({
     "date.invalidRange": "date_from debe ser anterior o igual a date_to.",
+    "hours.overlap": "Los bloques horarios del {{#day}} se solapan: {{#block}}.",
   });
