@@ -1,7 +1,7 @@
 // Dependencies
-import { Op } from "sequelize";
+import { Op, UniqueConstraintError } from "sequelize";
 import {
-  addHours,
+  addMinutes,
   eachDayOfInterval,
   endOfMonth,
   format,
@@ -31,6 +31,7 @@ interface ScheduleData {
   business_id: string;
   date_from: string;
   date_to: string;
+  slot_duration_minutes: number;
   hours: HourEntry[];
 }
 
@@ -40,6 +41,7 @@ const expandDatesToRecords = (
   date_from: string,
   date_to: string,
   hours: HourEntry[],
+  slot_duration_minutes: number,
 ) => {
   const start = parseISO(date_from);
   const end = parseISO(date_to);
@@ -50,6 +52,7 @@ const expandDatesToRecords = (
     open_time: string | null;
     close_time: string | null;
     business_id: string;
+    slot_duration_minutes: number;
   }[] = [];
 
   for (const day of days) {
@@ -62,6 +65,7 @@ const expandDatesToRecords = (
         open_time: hourEntry.open_time,
         close_time: hourEntry.close_time,
         business_id,
+        slot_duration_minutes,
       });
     }
   }
@@ -71,11 +75,17 @@ const expandDatesToRecords = (
 
 export const createSchedule = async (scheduleData: ScheduleData) => {
   try {
-    const { business_id, date_from, date_to, hours } = scheduleData;
-    const records = expandDatesToRecords(business_id, date_from, date_to, hours);
+    const { business_id, date_from, date_to, hours, slot_duration_minutes } = scheduleData;
+    const records = expandDatesToRecords(business_id, date_from, date_to, hours, slot_duration_minutes);
     const newSchedule = await Schedule.bulkCreate(records);
     return { newSchedule };
   } catch (error) {
+    if (error instanceof UniqueConstraintError) {
+      throw new AppError(
+        "Ya existe un horario configurado para una o más fechas del rango indicado. Usa PUT /:id para modificar horarios existentes.",
+        409,
+      );
+    }
     throw new Error("Error al crear el horario: " + error);
   }
 };
@@ -147,9 +157,10 @@ export const getSchedulesByBusiness = async (
       for (const schedule of daySchedules) {
         const openTime = schedule.getDataValue("open_time");
         const closeTime = schedule.getDataValue("close_time");
+        const slotDuration: number = schedule.getDataValue("slot_duration_minutes") ?? 60;
         if (!openTime || !closeTime) continue;
 
-        let currentOpenTime = fromZonedTime(
+        let currentSlotStart = fromZonedTime(
           `${dateStr}T${openTime}`,
           TIME_ZONE,
         );
@@ -158,20 +169,20 @@ export const getSchedulesByBusiness = async (
           TIME_ZONE,
         );
 
-        while (isBefore(currentOpenTime, currentCloseTime)) {
-          const nextHour = addHours(currentOpenTime, 1);
+        while (isBefore(currentSlotStart, currentCloseTime)) {
+          const nextSlotStart = addMinutes(currentSlotStart, slotDuration);
 
           const isOccupied = reservationsRanges.some(
             range =>
-              currentOpenTime < range.end_time && nextHour > range.start_time,
+              currentSlotStart < range.end_time && nextSlotStart > range.start_time,
           );
 
           slots.push({
-            start: formatInTimeZone(currentOpenTime, TIME_ZONE, "HH:mm"),
-            end: formatInTimeZone(nextHour, TIME_ZONE, "HH:mm"),
+            start: formatInTimeZone(currentSlotStart, TIME_ZONE, "HH:mm"),
+            end: formatInTimeZone(nextSlotStart, TIME_ZONE, "HH:mm"),
             isBooked: isOccupied,
           });
-          currentOpenTime = nextHour;
+          currentSlotStart = nextSlotStart;
         }
       }
 
@@ -188,7 +199,7 @@ export const getSchedulesByBusiness = async (
 
 export const updateSchedule = async (
   scheduleId: string,
-  data: { date_from: string; date_to: string; hours: HourEntry[] },
+  data: { date_from: string; date_to: string; slot_duration_minutes: number; hours: HourEntry[] },
 ) => {
   const t = await sequelize.transaction();
   try {
@@ -196,7 +207,7 @@ export const updateSchedule = async (
     if (!existing) throw new AppError("Horario no encontrado.", 404);
 
     const business_id = existing.getDataValue("business_id");
-    const { date_from, date_to, hours } = data;
+    const { date_from, date_to, hours, slot_duration_minutes } = data;
 
     // Eliminar todos los registros del negocio dentro del rango de fechas
     await Schedule.destroy({
@@ -207,7 +218,7 @@ export const updateSchedule = async (
       transaction: t,
     });
 
-    const records = expandDatesToRecords(business_id, date_from, date_to, hours);
+    const records = expandDatesToRecords(business_id, date_from, date_to, hours, slot_duration_minutes);
     const updatedSchedule = await Schedule.bulkCreate(records, { transaction: t });
 
     await t.commit();

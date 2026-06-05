@@ -35,6 +35,11 @@ const Schedule = sequelize.define(
       },
       onDelete: "CASCADE",
     },
+    slot_duration_minutes: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 60,
+    },
   },
   {
     tableName: "schedules",
