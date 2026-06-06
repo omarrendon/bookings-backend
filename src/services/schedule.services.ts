@@ -1,11 +1,12 @@
 // Dependencies
-import { Op, UniqueConstraintError } from "sequelize";
+import { Op } from "sequelize";
 import {
   addMinutes,
   eachDayOfInterval,
   endOfMonth,
   format,
   isBefore,
+  parse,
   parseISO,
   startOfMonth,
 } from "date-fns";
@@ -43,8 +44,10 @@ const expandDatesToRecords = (
   hours: HourEntry[],
   slot_duration_minutes: number,
 ) => {
-  const start = parseISO(date_from);
-  const end = parseISO(date_to);
+  // slice(0,10) extrae "YYYY-MM-DD" tanto de "2026-06-22" como de "2026-06-22T00:00:00.000Z"
+  // parse crea medianoche en hora LOCAL, haciendo que eachDayOfInterval itere días calendario correctos
+  const start = parse(date_from.slice(0, 10), "yyyy-MM-dd", new Date());
+  const end = parse(date_to.slice(0, 10), "yyyy-MM-dd", new Date());
   const days = eachDayOfInterval({ start, end });
 
   const records: {
@@ -56,7 +59,7 @@ const expandDatesToRecords = (
   }[] = [];
 
   for (const day of days) {
-    const dayName = format(day, "EEEE"); // "Monday", "Tuesday", etc.
+    const dayName = format(day, "EEEE");
     const matchingHours = hours.filter(h => h.day === dayName);
 
     for (const hourEntry of matchingHours) {
@@ -77,15 +80,9 @@ export const createSchedule = async (scheduleData: ScheduleData) => {
   try {
     const { business_id, date_from, date_to, hours, slot_duration_minutes } = scheduleData;
     const records = expandDatesToRecords(business_id, date_from, date_to, hours, slot_duration_minutes);
-    const newSchedule = await Schedule.bulkCreate(records);
+    const newSchedule = await Schedule.bulkCreate(records, { ignoreDuplicates: true });
     return { newSchedule };
   } catch (error) {
-    if (error instanceof UniqueConstraintError) {
-      throw new AppError(
-        "Ya existe un horario configurado para una o más fechas del rango indicado. Usa PUT /:id para modificar horarios existentes.",
-        409,
-      );
-    }
     throw new Error("Error al crear el horario: " + error);
   }
 };
