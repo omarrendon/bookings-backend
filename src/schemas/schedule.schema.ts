@@ -34,6 +34,11 @@ const hourSchema = Joi.object({
     "hours.invalidRange": "open_time debe ser anterior a close_time.",
   });
 
+const toMinutes = (time: string) => {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+};
+
 const validateNoOverlaps = (value: { hours: { day: string; open_time: string | null; close_time: string | null }[] }, helpers: Joi.CustomHelpers) => {
   const byDay: Record<string, { open_time: string; close_time: string }[]> = {};
 
@@ -44,10 +49,10 @@ const validateNoOverlaps = (value: { hours: { day: string; open_time: string | n
   }
 
   for (const day of Object.keys(byDay)) {
-    const blocks = byDay[day].sort((a, b) => a.open_time.localeCompare(b.open_time));
+    const blocks = byDay[day].sort((a, b) => toMinutes(a.open_time) - toMinutes(b.open_time));
 
     for (let i = 0; i < blocks.length - 1; i++) {
-      if (blocks[i].close_time > blocks[i + 1].open_time) {
+      if (toMinutes(blocks[i].close_time) > toMinutes(blocks[i + 1].open_time)) {
         return helpers.error("hours.overlap", { day, block: `${blocks[i].open_time}–${blocks[i].close_time} se solapa con ${blocks[i + 1].open_time}–${blocks[i + 1].close_time}` });
       }
     }

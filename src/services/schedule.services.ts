@@ -81,8 +81,10 @@ export const createSchedule = async (scheduleData: ScheduleData) => {
     const { business_id, date_from, date_to, hours, slot_duration_minutes } = scheduleData;
     const records = expandDatesToRecords(business_id, date_from, date_to, hours, slot_duration_minutes);
     const newSchedule = await Schedule.bulkCreate(records, { ignoreDuplicates: true });
+    scheduleCache.invalidate(`${business_id}:`);
     return { newSchedule };
   } catch (error) {
+    if (error instanceof AppError) throw error;
     throw new Error("Error al crear el horario: " + error);
   }
 };
