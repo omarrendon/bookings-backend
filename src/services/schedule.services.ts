@@ -228,6 +228,15 @@ export const updateSchedule = async (
   }
 };
 
+export const deleteSchedule = async (scheduleId: string) => {
+  const existing = await Schedule.findByPk(scheduleId);
+  if (!existing) throw new AppError("Horario no encontrado.", 404);
+
+  const business_id = existing.getDataValue("business_id");
+  await existing.destroy();
+  scheduleCache.invalidate(`${business_id}:`);
+};
+
 export const getScheduleConfig = async (businessId: string) => {
   try {
     const schedules = await Schedule.findAll({

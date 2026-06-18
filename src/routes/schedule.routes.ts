@@ -6,6 +6,7 @@ import {
   getScheduleConfig,
   createSchedule,
   updateSchedule,
+  deleteSchedule,
 } from "../controllers/schedule.controllers";
 import {
   authenticateToken,
@@ -53,6 +54,21 @@ router.put(
   }),
   validateBody(updateScheduleSchema),
   updateSchedule,
+);
+
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRoles(["admin", "owner"], {
+    model: Schedule,
+    resourceIdParam: "id",
+    through: {
+      relatedOwnerField: "owner_id",
+      relatedModel: Business,
+      relationField: "business_id",
+    },
+  }),
+  deleteSchedule,
 );
 
 export default router;

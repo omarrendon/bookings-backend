@@ -83,6 +83,24 @@ export const updateSchedule = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteSchedule = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await scheduleService.deleteSchedule(id);
+    return res.status(200).json({
+      message: "Franja horaria eliminada exitosamente.",
+      success: true,
+    });
+  } catch (error) {
+    const statusCode = error instanceof AppError ? error.statusCode : 500;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(statusCode).json({
+      message: error instanceof AppError ? errorMessage : "Error interno del servidor: " + errorMessage,
+      success: false,
+    });
+  }
+};
+
 export const getScheduleConfig = async (req: Request, res: Response) => {
   try {
     const { business_id } = req.params;
