@@ -17,6 +17,7 @@ import schedulesRoutes from "./routes/schedule.routes";
 import userRoutes from "./routes/user.routes";
 // Database
 import { sequelize } from "./database/sequelize";
+import { setupAssociations } from "./database/associations";
 
 dotenv.config();
 
@@ -39,6 +40,8 @@ if (missingVars.length > 0) {
   );
   process.exit(1);
 }
+
+setupAssociations();
 
 const app = express();
 const PORT = process.env.PORT || 3000;

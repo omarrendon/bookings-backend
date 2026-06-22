@@ -35,6 +35,13 @@ export const getSchedulesByBusiness = async (req: Request, res: Response) => {
       });
     }
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date as string)) {
+      return res.status(400).json({
+        message: "El formato de fecha debe ser YYYY-MM-DD.",
+        success: false,
+      });
+    }
+
     const schedulesBusiness = await scheduleService.getSchedulesByBusiness(
       business_id,
       date as string,

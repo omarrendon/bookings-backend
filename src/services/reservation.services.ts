@@ -5,6 +5,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import Product from "../models/product.model";
 import Reservation from "../models/reservation.model";
 import ReservationProduct from "../models/reservationProduct.model";
+import ReservationProof from "../models/reservationProof.model";
 import Business from "../models/business.model";
 import Schedule from "../models/schedule.model";
 import { User } from "../models/user.model";
@@ -22,7 +23,6 @@ import { AppError } from "../utils/AppError";
 import { scheduleCache } from "../utils/scheduleCache";
 // Interfaces
 import {
-  IScheduleDay,
   IReservationProductInput,
   IReservationData,
 } from "../interfaces/reservation.interface";
@@ -140,11 +140,12 @@ export const createReservation = async (reservationData: IReservationData) => {
     const user = businessReservation.getDataValue("user");
     const workingHours = businessReservation.getDataValue("schedules");
 
-    // Usar la zona horaria del negocio para determinar el día correctamente
-    const dayOfWeek = formatInTimeZone(startDate, TIME_ZONE, "EEEE");
+    // Obtener la fecha local de la reservación para buscar el schedule del día exacto
+    const dateStr = formatInTimeZone(startDate, TIME_ZONE, "yyyy-MM-dd");
 
-    const dayOfReservation: IScheduleDay[] =
-      workingHours?.filter((day: IScheduleDay) => day.day === dayOfWeek) ?? [];
+    const dayOfReservation =
+      workingHours?.filter((s: any) => s.getDataValue("date") === dateStr) ??
+      [];
 
     if (dayOfReservation.length === 0) {
       throw new AppError("El negocio no opera el día seleccionado.", 400);
@@ -168,21 +169,21 @@ export const createReservation = async (reservationData: IReservationData) => {
       10,
     );
 
-    const scheduleValidate = dayOfReservation.map(
-      (day: IScheduleDay): boolean => {
-        if (!day.open_time || !day.close_time) return false;
+    const scheduleValidate = dayOfReservation.map((s: any): boolean => {
+      const openTime: string = s.getDataValue("open_time");
+      const closeTime: string = s.getDataValue("close_time");
+      if (!openTime || !closeTime) return false;
 
-        const [openHour, openMinute] = day.open_time.split(":").map(Number);
-        const [closeHour, closeMinute] = day.close_time.split(":").map(Number);
+      const [openHour, openMinute] = openTime.split(":").map(Number);
+      const [closeHour, closeMinute] = closeTime.split(":").map(Number);
 
-        const startTotal = startLocalHour * 60 + startLocalMinute;
-        const endTotal = endLocalHour * 60 + endLocalMinute;
-        const openTotal = openHour * 60 + openMinute;
-        const closeTotal = closeHour * 60 + closeMinute;
+      const startTotal = startLocalHour * 60 + startLocalMinute;
+      const endTotal = endLocalHour * 60 + endLocalMinute;
+      const openTotal = openHour * 60 + openMinute;
+      const closeTotal = closeHour * 60 + closeMinute;
 
-        return startTotal >= openTotal && endTotal <= closeTotal;
-      },
-    );
+      return startTotal >= openTotal && endTotal <= closeTotal;
+    });
 
     if (!scheduleValidate.includes(true)) {
       throw new AppError(
@@ -258,10 +259,13 @@ export const createReservation = async (reservationData: IReservationData) => {
     Promise.allSettled([
       emailService.sendEmailToRegisterReservation(emailFieldsInformation),
       emailService.sendEmailToNewReservation(emailFieldsInformation),
-    ]).then((results) => {
-      results.forEach((result) => {
+    ]).then(results => {
+      results.forEach(result => {
         if (result.status === "rejected") {
-          console.error("[EMAIL ERROR] Error al enviar email de reservacion:", result.reason);
+          console.error(
+            "[EMAIL ERROR] Error al enviar email de reservacion:",
+            result.reason,
+          );
         }
       });
     });
@@ -278,24 +282,33 @@ export const createReservation = async (reservationData: IReservationData) => {
 };
 
 export const getAllReservationsForBusiness = async (
-  business_id?: string | string[] | undefined,
+  business_id: string | string[] | undefined,
+  page = 1,
+  limit = 20,
 ) => {
   try {
-    const reservations = await Reservation.findAll({
+    const offset = (page - 1) * limit;
+    const { count, rows } = await Reservation.findAndCountAll({
       where: { business_id },
       include: [
         {
           model: Product,
           as: "products",
-          through: {
-            attributes: ["quantity"],
-          },
+          through: { attributes: ["quantity"] },
+        },
+        {
+          model: ReservationProof,
+          as: "proof_of_payments",
+          attributes: ["id", "url", "status", "uploaded_by", "created_at"],
+          required: false,
         },
       ],
       order: [["created_at", "DESC"]],
+      limit,
+      offset,
     });
 
-    return reservations;
+    return { reservations: rows, total: count, page, limit };
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error al obtener reservas: ${error.message}`);
@@ -311,6 +324,26 @@ enum ReservationStatus {
   CANCELLED = "cancelled",
   COMPLETED = "completed",
 }
+
+export const createReservationProof = async (
+  reservationId: string,
+  url: string,
+  publicId: string,
+  uploadedBy?: string,
+) => {
+  const reservation = await Reservation.findByPk(reservationId);
+  if (!reservation) throw new AppError("Reservación no encontrada.", 404);
+
+  const proof = await ReservationProof.create({
+    reservation_id: reservationId,
+    url,
+    public_id: publicId,
+    uploaded_by: uploadedBy ?? null,
+    status: "pending",
+  });
+
+  return proof;
+};
 
 export const updateStatus = async (
   reservationId: string,
