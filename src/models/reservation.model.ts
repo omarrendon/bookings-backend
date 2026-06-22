@@ -2,11 +2,6 @@
 import { DataTypes } from "sequelize";
 // Database
 import { sequelize } from "../database/sequelize";
-// Models
-import { User } from "./user.model";
-import Product from "./product.model";
-import Business from "./business.model";
-import ReservationProduct from "./reservationProduct.model";
 
 const Reservation = sequelize.define(
   "Reservation",
@@ -101,27 +96,4 @@ const Reservation = sequelize.define(
   },
 );
 
-Reservation.belongsTo(Business, {
-  foreignKey: "business_id",
-  as: "business",
-});
-
-Reservation.belongsTo(User, {
-  foreignKey: "user_id",
-  as: "user",
-});
-
-Reservation.belongsToMany(Product, {
-  through: ReservationProduct,
-  as: "products",
-  foreignKey: "reservation_id",
-  otherKey: "product_id",
-});
-
-Product.belongsToMany(Reservation, {
-  through: ReservationProduct,
-  as: "reservation_products",
-  foreignKey: "product_id",
-  otherKey: "reservation_id",
-});
 export default Reservation;

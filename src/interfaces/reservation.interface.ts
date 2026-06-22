@@ -1,6 +1,6 @@
 export interface IScheduleDay {
   id: string | number;
-  day: string;
+  date: string;
   open_time: string;
   close_time: string;
   [key: string]: any;

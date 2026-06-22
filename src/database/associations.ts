@@ -2,6 +2,7 @@ import Business from "../models/business.model";
 import Product from "../models/product.model";
 import Reservation from "../models/reservation.model";
 import ReservationProduct from "../models/reservationProduct.model";
+import ReservationProof from "../models/reservationProof.model";
 import { User } from "../models/user.model";
 
 export function setupAssociations() {
@@ -23,6 +24,26 @@ export function setupAssociations() {
   Business.hasMany(Reservation, {
     foreignKey: "business_id",
     as: "reservations",
+  });
+
+  // Usuario ↔ Reservas
+  Reservation.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
+  });
+
+  // Reservas ↔ Comprobantes de pago
+  Reservation.hasMany(ReservationProof, {
+    foreignKey: "reservation_id",
+    as: "proof_of_payments",
+  });
+  ReservationProof.belongsTo(Reservation, {
+    foreignKey: "reservation_id",
+    as: "reservation",
+  });
+  ReservationProof.belongsTo(User, {
+    foreignKey: "uploaded_by",
+    as: "uploader",
   });
 
   // Reservas ↔ Productos (M:N)

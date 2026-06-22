@@ -3,6 +3,30 @@ import { Request, Response, NextFunction } from "express";
 import { Model, ModelStatic } from "sequelize";
 import jwt from "jsonwebtoken";
 
+export function authenticateIfPresent(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader?.split(" ")[1];
+
+  if (!token) return next();
+
+  const secret = process.env.JWT_SECRET;
+  try {
+    const payload = jwt.verify(token, secret as string) as {
+      userId: string;
+      email: string;
+      role: string;
+    };
+    req.user = payload;
+  } catch {
+    // Token inválido — se trata como guest, no se rechaza la request
+  }
+  return next();
+}
+
 export function authenticateToken(
   req: Request,
   res: Response,
@@ -79,7 +103,7 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
         }
 
         if (ownerField) {
-          if (resource.getDataValue(ownerField) !== user.userId) {
+          if (String(resource.getDataValue(ownerField)) !== String(user.userId)) {
             return res.status(403).json({
               message: "No eres el propietario de este recurso.",
               success: false,
@@ -97,8 +121,8 @@ export function authorizeRoles(roles: string[], config?: OwnershipConfig) {
           }
 
           if (
-            relatedResource.getDataValue(through.relatedOwnerField) !==
-            user.userId
+            String(relatedResource.getDataValue(through.relatedOwnerField)) !==
+            String(user.userId)
           ) {
             return res.status(403).json({
               message: "No eres el propietario de este recurso.",

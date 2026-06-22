@@ -13,12 +13,14 @@ export const updateReservationSchema = Joi.object({
 
 export const createReservationSchema = Joi.object({
   business_id: Joi.string().required(),
-  user_id: Joi.string().optional(),
   customer_name: Joi.string().required().max(255),
   customer_email: Joi.string().email().required().max(255),
   customer_phone: Joi.string().required().max(20),
   proof_of_payment: Joi.string().optional().max(500),
-  start_time: Joi.date().required(),
+  notes: Joi.string().max(1000).optional().allow(""),
+  start_time: Joi.date().greater("now").required().messages({
+    "date.greater": "La fecha de la reservación debe ser en el futuro.",
+  }),
   products: Joi.array()
     .items(
       Joi.object({
