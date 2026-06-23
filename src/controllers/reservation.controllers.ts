@@ -50,6 +50,25 @@ export const getAllReservationsForBusiness = async (
   }
 };
 
+export const rescheduleReservation = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    const updated = await reservationService.rescheduleReservation(id, req.body, user);
+
+    return res.status(200).json({
+      message: "Reservación reprogramada y confirmada exitosamente.",
+      data: updated,
+      success: true,
+    });
+  } catch (error) {
+    const statusCode = error instanceof AppError ? error.statusCode : 500;
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    return res.status(statusCode).json({ message, success: false });
+  }
+};
+
 export const uploadProofOfPayment = async (req: Request, res: Response) => {
   try {
     if (!req.file) {
@@ -94,7 +113,8 @@ export const updateReservationStatusByBusiness = async (
       success: true,
     });
   } catch (err) {
+    const statusCode = err instanceof AppError ? err.statusCode : 500;
     const errorMessage = err instanceof Error ? err.message : String(err);
-    res.status(500).json({ message: `Error: ${errorMessage}`, success: false });
+    res.status(statusCode).json({ message: errorMessage, success: false });
   }
 };
