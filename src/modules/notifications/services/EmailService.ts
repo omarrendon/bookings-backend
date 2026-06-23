@@ -4,6 +4,7 @@ import { EmailProviderFactory } from "../providers/EmailProviderFactory";
 import registerReservationTemplate from "../templates/BookingRegisterTemplate";
 import bookingConfirmationTemplate from "../templates/BookingConfirmationTemplate";
 import bookingCancelationTemplate from "../templates/BookingCancelationTemplate";
+import bookingRescheduleTemplate from "../templates/BookingRescheduleTemplate";
 import newReservationTemplate from "../templates/NewReservationTemplate";
 import validateBusinessCountTemplate from "../templates/ValidateBusinessCountTemplate";
 import passwordResetTemplate from "../templates/PasswordResetTemplate";
@@ -60,6 +61,11 @@ export class EmailService {
   public async sendEmailToCancelReservation(fields: IReservationStatusEmailFields) {
     const { to, ...body } = fields;
     await this.dispatch(to, bookingCancelationTemplate, body);
+  }
+
+  public async sendEmailToRescheduleReservation(fields: IReservationStatusEmailFields) {
+    const { to, ...body } = fields;
+    await this.dispatch(to, bookingRescheduleTemplate, body);
   }
 
   public async sendEmailToNewReservation(fields: IReservationEmailFields) {

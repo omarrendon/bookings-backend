@@ -14,6 +14,7 @@ import {
   getAllReservationsForBusiness,
   updateReservationStatusByBusiness,
   uploadProofOfPayment,
+  rescheduleReservation,
 } from "../controllers/reservation.controllers";
 // Models
 import Reservation from "../models/reservation.model";
@@ -22,6 +23,7 @@ import Business from "../models/business.model";
 import {
   createReservationSchema,
   updateReservationSchema,
+  rescheduleReservationSchema,
 } from "../schemas/reservation.schema";
 
 const router = express.Router();
@@ -48,6 +50,22 @@ router.post(
   authenticateIfPresent,
   upload.single("file"),
   uploadProofOfPayment,
+);
+
+router.patch(
+  "/:id/reschedule",
+  authenticateToken,
+  authorizeRoles(["admin", "owner"], {
+    model: Reservation,
+    resourceIdParam: "id",
+    through: {
+      relationField: "business_id",
+      relatedModel: Business,
+      relatedOwnerField: "owner_id",
+    },
+  }),
+  validateBody(rescheduleReservationSchema),
+  rescheduleReservation,
 );
 
 router.put(

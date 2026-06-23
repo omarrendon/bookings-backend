@@ -325,6 +325,175 @@ enum ReservationStatus {
   COMPLETED = "completed",
 }
 
+export const rescheduleReservation = async (
+  reservationId: string,
+  data: { new_date: string; new_time: string },
+  user?: { userId: string; email: string; role: string },
+) => {
+  try {
+    const emailService = new EmailService();
+
+    const reservation = await Reservation.findByPk(reservationId, {
+      include: [
+        {
+          model: Business,
+          as: "business",
+          include: [{ model: Schedule, as: "schedules" }],
+        },
+        { model: Product, as: "products" },
+      ],
+    });
+
+    if (!reservation) throw new AppError("Reservación no encontrada.", 404);
+
+    const businessReservation = reservation.getDataValue("business");
+
+    // Validación de ownership
+    if (user?.role !== "admin") {
+      const ownerId = String(businessReservation?.getDataValue("owner_id"));
+      if (!user?.userId || ownerId !== String(user.userId)) {
+        throw new AppError(
+          "No tienes permisos para reprogramar esta reservación.",
+          403,
+        );
+      }
+    }
+
+    // Validación de status — no se puede reprogramar si está completada
+    const currentStatus = reservation.getDataValue("status");
+    if (currentStatus === "completed") {
+      throw new AppError(
+        "No se puede reprogramar una reservación completada.",
+        422,
+      );
+    }
+
+    // Construir nuevo start_time en UTC — slice(0,10) garantiza "YYYY-MM-DD" puro
+    const datePart = data.new_date.slice(0, 10);
+    const newStartTime = convertDateToUTC(`${datePart}T${data.new_time}:00`);
+
+    // Validar que la nueva fecha sea en el futuro
+    if (newStartTime <= new Date()) {
+      throw new AppError("La nueva fecha y hora deben ser en el futuro.", 400);
+    }
+
+    // Calcular nuevo end_time a partir de la duración de los productos
+    const products = reservation.getDataValue("products") as any[];
+    const totalDuration = products.reduce((total: number, p: any) => {
+      return (
+        total + Math.trunc((p.get("estimated_delivery_time") as number) || 0)
+      );
+    }, 0);
+    const newEndTime = addMinutesToDate(newStartTime, totalDuration);
+
+    // Validar que el nuevo día tenga schedule activo
+    const dateStr = formatInTimeZone(newStartTime, TIME_ZONE, "yyyy-MM-dd");
+    const workingHours = businessReservation?.getDataValue("schedules") ?? [];
+    const daySchedules = workingHours.filter(
+      (s: any) => s.getDataValue("date") === dateStr,
+    );
+
+    if (daySchedules.length === 0) {
+      throw new AppError("El negocio no opera el día seleccionado.", 400);
+    }
+
+    // Validar que la nueva hora esté dentro del horario laboral
+    const startLocalHour = parseInt(
+      formatInTimeZone(newStartTime, TIME_ZONE, "H"),
+      10,
+    );
+    const startLocalMinute = parseInt(
+      formatInTimeZone(newStartTime, TIME_ZONE, "m"),
+      10,
+    );
+    const endLocalHour = parseInt(
+      formatInTimeZone(newEndTime, TIME_ZONE, "H"),
+      10,
+    );
+    const endLocalMinute = parseInt(
+      formatInTimeZone(newEndTime, TIME_ZONE, "m"),
+      10,
+    );
+
+    const withinSchedule = daySchedules.some((s: any): boolean => {
+      const openTime: string = s.getDataValue("open_time");
+      const closeTime: string = s.getDataValue("close_time");
+      if (!openTime || !closeTime) return false;
+      const [oh, om] = openTime.split(":").map(Number);
+      const [ch, cm] = closeTime.split(":").map(Number);
+      const startTotal = startLocalHour * 60 + startLocalMinute;
+      const endTotal = endLocalHour * 60 + endLocalMinute;
+      return startTotal >= oh * 60 + om && endTotal <= ch * 60 + cm;
+    });
+
+    if (!withinSchedule) {
+      throw new AppError(
+        "La nueva hora no está dentro del horario laboral del negocio.",
+        400,
+      );
+    }
+
+    // Verificar solapamiento con otras reservaciones (excluyendo la actual)
+    const overlap = await Reservation.findOne({
+      where: {
+        business_id: reservation.getDataValue("business_id"),
+        id: { [Op.ne]: reservationId },
+        status: { [Op.in]: ["pending", "confirmed"] },
+        [Op.and]: [
+          { start_time: { [Op.lt]: newEndTime } },
+          { end_time: { [Op.gt]: newStartTime } },
+        ],
+      },
+    });
+
+    if (overlap) {
+      throw new AppError("Ya existe una reservación en el nuevo horario.", 409);
+    }
+
+    // Actualizar la reservación
+    const updated = await reservation.update({
+      start_time: newStartTime,
+      end_time: newEndTime,
+      reservation_date: newStartTime,
+      status: "confirmed",
+      updated_by: user?.userId ?? null,
+      updated_at: new Date(),
+    });
+
+    // Invalidar cache de slots del negocio
+    scheduleCache.invalidate(`${reservation.getDataValue("business_id")}:`);
+
+    // Enviar email al cliente (no bloqueante)
+    const emailBody = {
+      to: reservation.getDataValue("customer_email"),
+      name: reservation.getDataValue("customer_name"),
+      businessName: businessReservation?.getDataValue("name"),
+      startTime: newStartTime.toISOString(),
+      endTime: newEndTime.toISOString(),
+      status: "confirmed",
+      products,
+    };
+
+    Promise.allSettled([
+      emailService.sendEmailToRescheduleReservation(emailBody),
+    ]).then(results => {
+      results.forEach(r => {
+        if (r.status === "rejected") {
+          console.error("[EMAIL ERROR] reschedule:", r.reason);
+        }
+      });
+    });
+
+    return updated;
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    if (error instanceof Error) {
+      throw new Error(`Error al reprogramar la reservación: ${error.message}`);
+    }
+    throw new Error("Error al reprogramar la reservación: Error desconocido");
+  }
+};
+
 export const createReservationProof = async (
   reservationId: string,
   url: string,
@@ -352,30 +521,116 @@ export const updateStatus = async (
 ) => {
   try {
     const emailService = new EmailService();
+
     const reservation = await Reservation.findByPk(reservationId, {
       include: [
         {
           model: Business,
           as: "business",
+          include: [{ model: Schedule, as: "schedules" }],
+        },
+        {
+          model: Product,
+          as: "products",
+          through: { attributes: ["quantity"] },
         },
       ],
     });
-    const businessReservation = reservation?.getDataValue("business");
-    if (!reservation) {
-      throw new Error("Reservación no existente.");
+
+    if (!reservation) throw new AppError("Reservación no encontrada.", 404);
+
+    const businessReservation = reservation.getDataValue("business");
+
+    // Validación de ownership
+    if (user?.role !== "admin") {
+      const ownerId = String(businessReservation?.getDataValue("owner_id"));
+      if (!user?.userId || ownerId !== String(user.userId)) {
+        throw new AppError(
+          "No tienes permisos para modificar esta reservación.",
+          403,
+        );
+      }
     }
 
     if (reservation.getDataValue("status") === ReservationStatus.COMPLETED) {
-      throw new Error("No se puede actualizar una reservación completada.");
+      throw new AppError(
+        "No se puede actualizar una reservación completada.",
+        422,
+      );
     }
 
-    const modifyStatus = {
+    // Validaciones de horario y solapamiento solo al confirmar
+    if (statusData.status === ReservationStatus.CONFIRMED) {
+      const startTime = reservation.getDataValue("start_time") as Date;
+      const endTime = reservation.getDataValue("end_time") as Date;
+      const businessId = reservation.getDataValue("business_id");
+
+      // Validar que el día tenga horario activo
+      const dateStr = formatInTimeZone(startTime, TIME_ZONE, "yyyy-MM-dd");
+      const workingHours = businessReservation?.getDataValue("schedules") ?? [];
+      const daySchedules = workingHours.filter(
+        (s: any) => s.getDataValue("date") === dateStr,
+      );
+
+      if (daySchedules.length === 0) {
+        throw new AppError(
+          "El negocio no opera el día de la reservación.",
+          400,
+        );
+      }
+
+      // Validar que la hora esté dentro del horario laboral
+      const startLocalHour = parseInt(formatInTimeZone(startTime, TIME_ZONE, "H"), 10);
+      const startLocalMinute = parseInt(formatInTimeZone(startTime, TIME_ZONE, "m"), 10);
+      const endLocalHour = parseInt(formatInTimeZone(endTime, TIME_ZONE, "H"), 10);
+      const endLocalMinute = parseInt(formatInTimeZone(endTime, TIME_ZONE, "m"), 10);
+
+      const withinSchedule = daySchedules.some((s: any): boolean => {
+        const openTime: string = s.getDataValue("open_time");
+        const closeTime: string = s.getDataValue("close_time");
+        if (!openTime || !closeTime) return false;
+        const [oh, om] = openTime.split(":").map(Number);
+        const [ch, cm] = closeTime.split(":").map(Number);
+        const startTotal = startLocalHour * 60 + startLocalMinute;
+        const endTotal = endLocalHour * 60 + endLocalMinute;
+        return startTotal >= oh * 60 + om && endTotal <= ch * 60 + cm;
+      });
+
+      if (!withinSchedule) {
+        throw new AppError(
+          "La reservación está fuera del horario laboral del negocio.",
+          400,
+        );
+      }
+
+      // Verificar solapamiento con otras reservaciones ya confirmadas
+      const overlap = await Reservation.findOne({
+        where: {
+          business_id: businessId,
+          id: { [Op.ne]: reservationId },
+          status: ReservationStatus.CONFIRMED,
+          [Op.and]: [
+            { start_time: { [Op.lt]: endTime } },
+            { end_time: { [Op.gt]: startTime } },
+          ],
+        },
+      });
+
+      if (overlap) {
+        throw new AppError(
+          "Ya existe una reservación confirmada en ese horario.",
+          409,
+        );
+      }
+    }
+
+    const updatedReservation = await reservation.update({
       status: statusData.status,
       updated_by: user?.userId ?? null,
       updated_at: new Date(),
-    };
+    });
 
-    const updatedReservation = await reservation.update(modifyStatus);
+    scheduleCache.invalidate(`${reservation.getDataValue("business_id")}:`);
 
     const emailBody = {
       to: reservation.getDataValue("customer_email"),
@@ -387,18 +642,33 @@ export const updateStatus = async (
       products: reservation.getDataValue("products"),
     };
 
+    // Fix 3: emails no bloqueantes con Promise.allSettled
     if (statusData.status === ReservationStatus.CONFIRMED) {
-      await emailService.sendEmailToConfirmReservation(emailBody);
+      Promise.allSettled([
+        emailService.sendEmailToConfirmReservation(emailBody),
+      ]).then(results => {
+        results.forEach(r => {
+          if (r.status === "rejected")
+            console.error("[EMAIL ERROR] confirm:", r.reason);
+        });
+      });
     } else if (statusData.status === ReservationStatus.CANCELLED) {
-      await emailService.sendEmailToCancelReservation(emailBody);
+      Promise.allSettled([
+        emailService.sendEmailToCancelReservation(emailBody),
+      ]).then(results => {
+        results.forEach(r => {
+          if (r.status === "rejected")
+            console.error("[EMAIL ERROR] cancel:", r.reason);
+        });
+      });
     }
 
     return updatedReservation;
   } catch (error) {
-    if (error instanceof Error) {
+    // Fix 6: re-lanza AppError sin envolver para preservar el status code
+    if (error instanceof AppError) throw error;
+    if (error instanceof Error)
       throw new Error(`Error al actualizar la reservación: ${error.message}`);
-    } else {
-      throw new Error("Error al actualizar la reservación: Error desconocido");
-    }
+    throw new Error("Error al actualizar la reservación: Error desconocido");
   }
 };
