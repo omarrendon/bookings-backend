@@ -29,6 +29,33 @@ import {
 
 const TIME_ZONE = process.env.TIMEZONE || "America/Mexico_City";
 
+const buildBusinessContact = (business: any) => {
+  const street = business.getDataValue("street") ?? "";
+  const extNum = business.getDataValue("external_number") ?? "";
+  const intNum = business.getDataValue("internal_number");
+  const neighborhood = business.getDataValue("neighborhood");
+  const city = business.getDataValue("city") ?? "";
+  const state = business.getDataValue("state") ?? "";
+  const zip = business.getDataValue("zip_code") ?? "";
+  const country = business.getDataValue("country") ?? "";
+
+  const addressParts = [
+    `${street} #${extNum}${intNum ? ` Int. ${intNum}` : ""}`,
+    neighborhood,
+    `${city}, ${state} ${zip}`,
+    country,
+  ].filter(Boolean);
+  const address = addressParts.join(", ");
+
+  return {
+    phone: business.getDataValue("phone_number") ?? undefined,
+    address,
+    mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,
+    website: business.getDataValue("website") ?? undefined,
+    socialLinks: business.getDataValue("social_links") ?? undefined,
+  };
+};
+
 // REGLAS DE NEGOCIO
 /*
 - Una reservación puede ser creada por cualquier usuario.
@@ -250,6 +277,7 @@ export const createReservation = async (reservationData: IReservationData) => {
       startTime: reservation.getDataValue("start_time"),
       endTime: reservation.getDataValue("end_time"),
       products: productsFounded,
+      businessContact: buildBusinessContact(businessReservation),
     };
 
     // Invalidar cache de slots para este negocio
@@ -472,6 +500,7 @@ export const rescheduleReservation = async (
       endTime: newEndTime.toISOString(),
       status: "confirmed",
       products,
+      businessContact: businessReservation ? buildBusinessContact(businessReservation) : undefined,
     };
 
     Promise.allSettled([
@@ -527,7 +556,10 @@ export const updateStatus = async (
         {
           model: Business,
           as: "business",
-          include: [{ model: Schedule, as: "schedules" }],
+          include: [
+            { model: Schedule, as: "schedules" },
+            { model: User, as: "user" },
+          ],
         },
         {
           model: Product,
@@ -640,6 +672,7 @@ export const updateStatus = async (
       endTime: reservation.getDataValue("end_time"),
       status: statusData.status,
       products: reservation.getDataValue("products"),
+      businessContact: businessReservation ? buildBusinessContact(businessReservation) : undefined,
     };
 
     // Fix 3: emails no bloqueantes con Promise.allSettled
@@ -653,8 +686,19 @@ export const updateStatus = async (
         });
       });
     } else if (statusData.status === ReservationStatus.CANCELLED) {
+      const ownerEmail = businessReservation?.getDataValue("user")?.getDataValue("email");
       Promise.allSettled([
         emailService.sendEmailToCancelReservation(emailBody),
+        ...(ownerEmail ? [emailService.sendEmailToClientCancellation({
+          to: ownerEmail,
+          name: reservation.getDataValue("customer_name"),
+          businessName: businessReservation?.getDataValue("name"),
+          startTime: reservation.getDataValue("start_time"),
+          endTime: reservation.getDataValue("end_time"),
+          products: reservation.getDataValue("products") ?? [],
+          customerEmail: reservation.getDataValue("customer_email"),
+          reservationId,
+        })] : []),
       ]).then(results => {
         results.forEach(r => {
           if (r.status === "rejected")
