@@ -1,15 +1,20 @@
+import React from "react";
+import { render } from "@react-email/render";
 // Provider
 import { EmailProviderFactory } from "../providers/EmailProviderFactory";
 // Templates
-import registerReservationTemplate from "../templates/BookingRegisterTemplate";
-import bookingConfirmationTemplate from "../templates/BookingConfirmationTemplate";
-import bookingCancelationTemplate from "../templates/BookingCancelationTemplate";
-import bookingRescheduleTemplate from "../templates/BookingRescheduleTemplate";
-import newReservationTemplate from "../templates/NewReservationTemplate";
-import validateBusinessCountTemplate from "../templates/ValidateBusinessCountTemplate";
-import passwordResetTemplate from "../templates/PasswordResetTemplate";
-import ConfirmPasswordHasBeenUpdated from "../templates/ConfirmPasswordHasBeenUpdated";
-import businessCreatedTemplate from "../templates/BusinessCreatedTemplate";
+import * as bookingRegisterTemplate from "../templates/BookingRegisterTemplate";
+import * as bookingConfirmationTemplate from "../templates/BookingConfirmationTemplate";
+import * as bookingCancelationTemplate from "../templates/BookingCancelationTemplate";
+import * as bookingRescheduleTemplate from "../templates/BookingRescheduleTemplate";
+import * as newReservationTemplate from "../templates/NewReservationTemplate";
+import * as validateBusinessCountTemplate from "../templates/ValidateBusinessCountTemplate";
+import * as passwordResetTemplate from "../templates/PasswordResetTemplate";
+import * as confirmPasswordHasBeenUpdated from "../templates/ConfirmPasswordHasBeenUpdated";
+import * as businessCreatedTemplate from "../templates/BusinessCreatedTemplate";
+import * as clientCancelledReservationTemplate from "../templates/ClientCancelledReservationTemplate";
+
+import { BusinessContactInfo } from "../templates/components/BusinessContact";
 
 interface IReservationEmailFields {
   to: string;
@@ -20,6 +25,7 @@ interface IReservationEmailFields {
   startTime: string;
   endTime: string;
   products: object[];
+  businessContact?: BusinessContactInfo;
 }
 
 interface IReservationStatusEmailFields {
@@ -30,6 +36,23 @@ interface IReservationStatusEmailFields {
   endTime: string;
   status: string;
   products: object[];
+  businessContact?: BusinessContactInfo;
+}
+
+interface IClientCancelledEmailFields {
+  to: string;
+  name: string;
+  businessName: string;
+  startTime: string;
+  endTime?: string;
+  products?: object[];
+  customerEmail?: string;
+  reservationId?: string | number;
+}
+
+interface EmailTemplate<T extends object> {
+  default: React.ComponentType<T>;
+  subject: (data: T) => string;
 }
 
 export class EmailService {
@@ -39,18 +62,20 @@ export class EmailService {
     this.provider = EmailProviderFactory.create();
   }
 
-  private async dispatch<T>(
+  private async dispatch<T extends object>(
     recipient: string,
-    templateFn: (data: T) => { subject: string; bodyTemplate: string },
+    template: EmailTemplate<T>,
     data: T,
   ): Promise<void> {
-    const { subject, bodyTemplate } = templateFn(data);
-    await this.provider.sendEmail(recipient, subject, bodyTemplate);
+    const element = React.createElement(template.default, data);
+    const html = await render(element);
+    const subjectLine = template.subject(data);
+    await this.provider.sendEmail(recipient, subjectLine, html);
   }
 
   public async sendEmailToRegisterReservation(fields: IReservationEmailFields) {
-    const { to, ...body } = fields;
-    await this.dispatch(to, registerReservationTemplate, body);
+    const { to, toBusiness: _toBusiness, ...body } = fields;
+    await this.dispatch(to, bookingRegisterTemplate, body);
   }
 
   public async sendEmailToConfirmReservation(fields: IReservationStatusEmailFields) {
@@ -74,18 +99,23 @@ export class EmailService {
   }
 
   public async sendEmailToValidateBusiness(to: string, userId: string) {
-    await this.dispatch(to, validateBusinessCountTemplate, userId);
+    await this.dispatch(to, validateBusinessCountTemplate, { userId });
   }
 
   public async sendEmailToResetPassword(to: string, resetLinkToken: string) {
-    await this.dispatch(to, passwordResetTemplate, resetLinkToken);
+    await this.dispatch(to, passwordResetTemplate, { resetLink: resetLinkToken });
   }
 
   public async sendEmailToConfirmPasswordUpdate(to: string) {
-    await this.dispatch(to, ConfirmPasswordHasBeenUpdated, undefined);
+    await this.dispatch(to, confirmPasswordHasBeenUpdated, {} as never);
+  }
+
+  public async sendEmailToClientCancellation(fields: IClientCancelledEmailFields) {
+    const { to, ...body } = fields;
+    await this.dispatch(to, clientCancelledReservationTemplate, body);
   }
 
   public async sendBussinesCreated(to: string, businessName: string) {
-    await this.dispatch(to, businessCreatedTemplate, businessName);
+    await this.dispatch(to, businessCreatedTemplate, { businessName });
   }
 }
