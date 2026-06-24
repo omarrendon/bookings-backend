@@ -34,14 +34,32 @@ export const getAllReservationsForBusiness = async (
     const { business_id } = req.params as {
       business_id: string | string[] | undefined;
     };
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
 
-    const result = await reservationService.getAllReservationsForBusiness(business_id, page, limit);
+    const page  = parseInt(req.query.page  as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const filters = {
+      date_from:      req.query.date_from      as string | undefined,
+      date_to:        req.query.date_to        as string | undefined,
+      status:         req.query.status         as string | undefined,
+      customer_name:  req.query.customer_name  as string | undefined,
+      customer_email: req.query.customer_email as string | undefined,
+      customer_phone: req.query.customer_phone as string | undefined,
+    };
+
+    const result = await reservationService.getAllReservationsForBusiness(
+      business_id, filters, page, limit,
+    );
+
     res.status(200).json({
       message: "Reservaciones obtenidas correctamente.",
       data: result.reservations,
-      meta: { total: result.total, page: result.page, limit: result.limit },
+      meta: {
+        total:   result.total,
+        page:    result.page,
+        limit:   result.limit,
+        filters: result.filters,
+      },
       success: true,
     });
   } catch (err) {

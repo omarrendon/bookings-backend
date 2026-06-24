@@ -1,5 +1,5 @@
 // Dependencies
-import { Op, Transaction } from "sequelize";
+import { Op, Transaction, WhereOptions } from "sequelize";
 import { formatInTimeZone } from "date-fns-tz";
 // Models
 import Product from "../models/product.model";
@@ -309,15 +309,54 @@ export const createReservation = async (reservationData: IReservationData) => {
   }
 };
 
+export interface ReservationFilters {
+  date_from?: string;
+  date_to?: string;
+  status?: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+}
+
 export const getAllReservationsForBusiness = async (
   business_id: string | string[] | undefined,
+  filters: ReservationFilters = {},
   page = 1,
   limit = 20,
 ) => {
   try {
     const offset = (page - 1) * limit;
+    const where: WhereOptions = { business_id };
+
+    // Filtro por rango de fechas sobre start_time
+    if (filters.date_from || filters.date_to) {
+      where.start_time = {
+        ...(filters.date_from && { [Op.gte]: new Date(`${filters.date_from}T00:00:00`) }),
+        ...(filters.date_to   && { [Op.lte]: new Date(`${filters.date_to}T23:59:59`) }),
+      };
+    }
+
+    // Filtro por uno o varios status separados por coma
+    if (filters.status) {
+      const statuses = filters.status.split(",").map(s => s.trim());
+      where.status = statuses.length === 1
+        ? statuses[0]
+        : { [Op.in]: statuses };
+    }
+
+    // Filtros de texto parcial (case-insensitive)
+    if (filters.customer_name) {
+      where.customer_name = { [Op.iLike]: `%${filters.customer_name}%` };
+    }
+    if (filters.customer_email) {
+      where.customer_email = { [Op.iLike]: `%${filters.customer_email}%` };
+    }
+    if (filters.customer_phone) {
+      where.customer_phone = { [Op.iLike]: `%${filters.customer_phone}%` };
+    }
+
     const { count, rows } = await Reservation.findAndCountAll({
-      where: { business_id },
+      where,
       include: [
         {
           model: Product,
@@ -331,12 +370,16 @@ export const getAllReservationsForBusiness = async (
           required: false,
         },
       ],
-      order: [["created_at", "DESC"]],
+      order: [["start_time", "DESC"]],
       limit,
       offset,
     });
 
-    return { reservations: rows, total: count, page, limit };
+    const activeFilters = Object.fromEntries(
+      Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""),
+    );
+
+    return { reservations: rows, total: count, page, limit, filters: activeFilters };
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error al obtener reservas: ${error.message}`);

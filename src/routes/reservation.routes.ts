@@ -7,7 +7,7 @@ import {
   authenticateIfPresent,
   authorizeRoles,
 } from "../middlewares/auth.middleware";
-import { validateBody } from "../middlewares/validate";
+import { validateBody, validateQuery } from "../middlewares/validate";
 // Controllers
 import {
   registerReservation,
@@ -24,6 +24,7 @@ import {
   createReservationSchema,
   updateReservationSchema,
   rescheduleReservationSchema,
+  reservationFiltersSchema,
 } from "../schemas/reservation.schema";
 
 const router = express.Router();
@@ -43,6 +44,7 @@ router.get(
     ownerField: "owner_id",
     resourceIdParam: "business_id",
   }),
+  validateQuery(reservationFiltersSchema),
   getAllReservationsForBusiness,
 );
 router.post(
