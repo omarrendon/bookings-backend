@@ -15,6 +15,7 @@ import productRoutes from "./routes/product.routes";
 import reservationRoutes from "./routes/reservation.routes";
 import schedulesRoutes from "./routes/schedule.routes";
 import userRoutes from "./routes/user.routes";
+import dashboardRoutes from "./routes/dashboard.routes";
 // Database
 import { sequelize } from "./database/sequelize";
 import { setupAssociations } from "./database/associations";
@@ -68,6 +69,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/schedules", schedulesRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // GLOBAL ERROR HANDLER
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
