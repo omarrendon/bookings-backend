@@ -4,14 +4,15 @@ import RefreshToken from "../models/refreshToken.model";
 
 // Dependencies
 import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library";
 
 // Utils
 import { generateToken } from "../utils/jwt";
 import { EmailService } from "../modules/notifications/services/EmailService";
-import jwt from "jsonwebtoken";
 import { addMinutes, addDays } from "date-fns";
 import PasswordResetToken from "../models/passwordResetToken";
-import { Op } from "sequelize";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export async function loginUserWithEmailAndPassword(
   email: string,
@@ -19,6 +20,10 @@ export async function loginUserWithEmailAndPassword(
 ) {
   const user = await User.findOne({ where: { email } });
   if (!user) throw new Error("Usuario no encontrado.");
+
+  if (user.getDataValue("auth_provider") === "google") {
+    throw new Error("Esta cuenta usa Google para autenticarse. Inicia sesión con Google.");
+  }
 
   const isValid = await bcrypt.compare(password, user.getDataValue("password"));
   if (!isValid) throw new Error("Credenciales inválidas.");
@@ -127,6 +132,10 @@ export const requestPasswordReset = async (email: string) => {
     const user = await User.findOne({ where: { email } });
     if (!user) return { message: "Correo de recuperación enviado." };
 
+    if (user.getDataValue("auth_provider") === "google") {
+      throw new Error("Esta cuenta usa Google para autenticarse. No requiere contraseña.");
+    }
+
     const token = crypto.randomUUID();
     const expired_at = addMinutes(new Date(), 15);
 
@@ -234,4 +243,68 @@ export const revokeRefreshToken = async (refreshToken: string) => {
   await tokenRecord.update({ is_revoked: true });
 
   return { message: "Sesión cerrada exitosamente." };
+};
+
+export const loginWithGoogle = async (idToken: string) => {
+  const ticket = await googleClient.verifyIdToken({
+    idToken,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+  if (!payload) throw new Error("Token de Google inválido.");
+  if (!payload.email_verified) throw new Error("El email de Google no está verificado.");
+
+  const { sub: googleId, email, given_name, family_name, picture } = payload;
+
+  // 1. Buscar por google_id
+  let user = await User.findOne({ where: { google_id: googleId } });
+
+  if (!user) {
+    // 2. Buscar por email — vincular cuenta existente
+    user = await User.findOne({ where: { email } });
+
+    if (user) {
+      await user.update({ google_id: googleId, avatar_url: picture ?? null });
+    } else {
+      // 3. Crear usuario nuevo
+      user = await User.create({
+        name: given_name ?? email!.split("@")[0],
+        last_name: family_name ?? null,
+        email,
+        password: null,
+        google_id: googleId,
+        avatar_url: picture ?? null,
+        auth_provider: "google",
+        role: "user",
+      });
+    }
+  }
+
+  const token = generateToken(
+    user.getDataValue("id"),
+    user.getDataValue("email"),
+    user.getDataValue("role"),
+  );
+
+  const refreshTokenValue = crypto.randomUUID();
+  await RefreshToken.create({
+    user_id: user.getDataValue("id"),
+    token: refreshTokenValue,
+    expires_at: addDays(new Date(), 7),
+  });
+
+  return {
+    token,
+    refreshToken: refreshTokenValue,
+    user: {
+      id: user.getDataValue("id"),
+      email: user.getDataValue("email"),
+      name: user.getDataValue("name"),
+      last_name: user.getDataValue("last_name"),
+      role: user.getDataValue("role"),
+      avatar_url: user.getDataValue("avatar_url"),
+      auth_provider: user.getDataValue("auth_provider"),
+    },
+  };
 };
