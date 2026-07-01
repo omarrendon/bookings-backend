@@ -33,6 +33,7 @@ const REQUIRED_ENV_VARS = [
   "RESEND_API_KEY",
   "EMAIL_FROM",
   "CORS_ORIGIN",
+  "GOOGLE_CLIENT_ID",
 ];
 const missingVars = REQUIRED_ENV_VARS.filter(key => !process.env[key]);
 if (missingVars.length > 0) {

@@ -8,6 +8,7 @@ import {
   resetPassword,
   refreshAccessToken,
   revokeRefreshToken,
+  loginWithGoogle,
 } from "../services/auth.services";
 // Schemas
 import { authSchema, registerSchema } from "../schemas/auth.schema";
@@ -175,5 +176,32 @@ export const logout = async (req: Request, res: Response) => {
     return res.json({ message: "Sesión cerrada exitosamente.", success: true });
   } catch (error) {
     return res.status(500).json({ message: `${error}.`, success: false });
+  }
+};
+
+export const googleAuth = async (req: Request, res: Response) => {
+  try {
+    const { id_token } = req.body;
+    if (!id_token) {
+      return res.status(400).json({ message: "id_token es requerido.", success: false });
+    }
+
+    const { token, refreshToken, user } = await loginWithGoogle(id_token);
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.json({
+      message: "Sesión iniciada con Google exitosamente.",
+      data: { token, user },
+      success: true,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    return res.status(401).json({ message, success: false });
   }
 };

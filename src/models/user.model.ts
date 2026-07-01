@@ -25,7 +25,21 @@ export const User = sequelize.define(
     },
     password: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    google_id: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      unique: true,
+    },
+    avatar_url: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    auth_provider: {
+      type: DataTypes.ENUM("local", "google"),
       allowNull: false,
+      defaultValue: "local",
     },
     role: {
       type: DataTypes.ENUM("admin", "user", "owner"),
